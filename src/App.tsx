@@ -23,7 +23,7 @@ import * as api from './api';
 import { ThemeSwitcherProvider } from './theme/ThemeSwitcher';
 import { useTranslation } from "react-i18next";
 import icon from './icon.png'
-import {handleSay} from "./Say";
+import {handleSay,IsSpeaking} from "./Say";
 
 const { useEffect, useState } = React
 
@@ -35,6 +35,16 @@ function Main() {
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
     let isReady=false;
     let autoSpeedbuffer:Array<string>=new Array<string>();
+
+    const autoSpeed =()=>{
+
+        if ( (!IsSpeaking())
+            && autoSpeedbuffer.length>0
+            && store.settings.autoSpeech )
+            handleSay(autoSpeedbuffer.shift() as string, store.settings.speech);
+        window.requestAnimationFrame(autoSpeed)
+    }
+    window.requestAnimationFrame(autoSpeed)
     useEffect(() => {
         if (store.needSetting) {
             setOpenSettingWindow(true)
@@ -173,20 +183,15 @@ function Main() {
                             content: text,
                             cancel,
                         }
-                        //查找标点符号
-                        let l:number=text.indexOf('。',frPos)
-                        if(l<0)
-                            l=text.indexOf('？',frPos)
-                        if(l<0)
-                            l=text.indexOf('！',frPos)
-                        if(l<0)
-                            l=text.indexOf('：',frPos)
-                        if (l>frPos) {
-                            let substr = text.substring(frPos, l)
+
+                        const regex=/(？|！|：|。)/g
+                        regex.lastIndex=frPos
+                        let match=regex.exec(text);
+                        if (match!=null && match.index>frPos) {
+                            let substr = text.substring(frPos, match.index+1)
                             autoSpeedbuffer.push(substr)
-                            // if (store.settings.autoSpeech ) handleSay(targetMsg, store.settings.speech);
+                            frPos=match.index+1
                         }
-                        frPos=l
                         break;
                     }
                 }

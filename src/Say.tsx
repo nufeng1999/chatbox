@@ -6,12 +6,14 @@ import {IconButton,Checkbox} from "@mui/material";
 import VoiceOverOffIcon from "@mui/icons-material/VoiceOverOff";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import {useTranslation} from "react-i18next";
+import {bool} from "prop-types";
 
 let currentmediaRecorder : MediaRecorder | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentIndex: string = "-1";
 const synth = window.speechSynthesis;
 
+let isSpeaking:boolean=false;
 function blobPartToArrayBuffer(blobParts:BlobPart[]) {
     return new Promise ((resolve, reject) => {
         const fileReader = new FileReader();
@@ -24,48 +26,65 @@ function blobPartToArrayBuffer(blobParts:BlobPart[]) {
         fileReader.readAsArrayBuffer(new Blob(blobParts));
     });
 }
-function synth_cancel(msg:Message):boolean{
+function synth_cancel(msg:string|Message):boolean{
     if (currentUtterance && currentIndex !== "-1") {
         synth.cancel();
+        isSpeaking=false
         if(currentmediaRecorder)currentmediaRecorder.stop();
         currentmediaRecorder=null;
-        if (msg.id === currentIndex) {
-            currentUtterance = null;
-            currentIndex = "-1";
+        if(typeof msg !== 'string') {
+            if (msg.id === currentIndex) {
+                currentUtterance = null;
+                currentIndex = "-1";
+            }
         }
         return true;
     }
     return false;
 }
-export function handleSay(msg:Message,speech:string|null){
+
+export function IsSpeaking() :boolean{
+    return isSpeaking;
+}
+export function handleSay(msg:string|Message,speech:string|null){
     // const [isSpeaking, setIsSpeaking] = useState(false)
     console.log("准备开始自动朗读。");
     const utterance=presay(msg,speech);
     if(utterance === null){
         console.log("无法朗读 utterance is null!");
+        isSpeaking=false;
         // setIsSpeaking(false);
         return;
     }
     synth.speak(utterance);
+    isSpeaking=true
     // setIsSpeaking(true);
     currentUtterance = utterance;
-    currentIndex = msg.id;
+    if(typeof msg !== 'string') {
+        currentIndex = msg.id;
+    }
 
     utterance.onend = () => {
         if(currentmediaRecorder)
             currentmediaRecorder.stop();
         console.log("朗读结束了。");
         currentmediaRecorder=null;
+        isSpeaking=false;
         // setIsSpeaking(false);
         currentUtterance = null;
         currentIndex = "-1";
     }
 }
-function presay(msg:Message,speech:string|null):SpeechSynthesisUtterance|null{
+function presay(msg:string|Message,speech:string|null):SpeechSynthesisUtterance|null{
     // const { msg } = props;
     // const { speech } = props;
     if (synth_cancel(msg))return null;
-    const txt = msg.content?.trim() || ''
+    let txt= ""
+    if(typeof msg !== 'string') {
+        txt = msg.content?.trim() || ''
+    }else{
+        txt=msg
+    }
     if (!txt) return null;
     const utterance = new SpeechSynthesisUtterance(txt);
     const voices = speechSynthesis.getVoices();
@@ -76,7 +95,9 @@ function presay(msg:Message,speech:string|null):SpeechSynthesisUtterance|null{
         voice = voices.find(voice => voice.lang === 'zh-CN');
     }
     utterance.voice=voice?voice:null;
-    currentIndex = msg.id;
+    if(typeof msg !== 'string') {
+        currentIndex = msg.id;
+    }
     return utterance;
 }
 export function Say(props: Props) {

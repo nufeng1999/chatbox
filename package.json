@@ -9,8 +9,8 @@
     "build:react": "react-scripts build",
     "test:react": "react-scripts test",
     "eject:react": "react-scripts eject",
-    "build:express": "react-scripts build && rm -rf app && mv build app && cp server.js app/ && cd app && npm install ",
-    "start:express": "cd app && node server.js",
+    "build:express": "react-scripts build && cp -f server.js build/ && cd build && npm install ",
+    "start:express": "cp -f server.js build/ && cd build && node --experimental-modules server.js",
     "tauri": "tauri"
   },
   "repository": {
@@ -71,6 +71,7 @@
     "markdown-it": "^13.0.1",
     "markdown-it-link-attributes": "^4.0.1",
     "material-ui-popup-state": "^5.0.4",
+    "pkg-fetch": "^3.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-i18next": "^12.2.0",
