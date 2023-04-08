@@ -1,6 +1,5 @@
 import {useState} from "react";
 import {Message} from "@/src/types";
-import { dialog,fs as taurifs } from '@tauri-apps/api';
 import {Props} from "@/src/Block";
 import {IconButton,Checkbox} from "@mui/material";
 
@@ -25,6 +24,61 @@ function blobPartToArrayBuffer(blobParts:BlobPart[]) {
         fileReader.readAsArrayBuffer(new Blob(blobParts));
     });
 }
+function synth_cancel(msg:Message):boolean{
+    if (currentUtterance && currentIndex !== "-1") {
+        synth.cancel();
+        if(currentmediaRecorder)currentmediaRecorder.stop();
+        currentmediaRecorder=null;
+        if (msg.id === currentIndex) {
+            currentUtterance = null;
+            currentIndex = "-1";
+        }
+        return true;
+    }
+    return false;
+}
+export function handleSay(msg:Message,speech:string|null){
+    // const [isSpeaking, setIsSpeaking] = useState(false)
+    console.log("准备开始自动朗读。");
+    const utterance=presay(msg,speech);
+    if(utterance === null){
+        console.log("无法朗读 utterance is null!");
+        // setIsSpeaking(false);
+        return;
+    }
+    synth.speak(utterance);
+    // setIsSpeaking(true);
+    currentUtterance = utterance;
+    currentIndex = msg.id;
+
+    utterance.onend = () => {
+        if(currentmediaRecorder)
+            currentmediaRecorder.stop();
+        console.log("朗读结束了。");
+        currentmediaRecorder=null;
+        // setIsSpeaking(false);
+        currentUtterance = null;
+        currentIndex = "-1";
+    }
+}
+function presay(msg:Message,speech:string|null):SpeechSynthesisUtterance|null{
+    // const { msg } = props;
+    // const { speech } = props;
+    if (synth_cancel(msg))return null;
+    const txt = msg.content?.trim() || ''
+    if (!txt) return null;
+    const utterance = new SpeechSynthesisUtterance(txt);
+    const voices = speechSynthesis.getVoices();
+    // "speech_lang": "Microsoft Yaoyao - Chinese (Simplified, PRC)",
+    // "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
+    let voice = voices.find(voice => voice.name === speech);
+    if (!voice) {
+        voice = voices.find(voice => voice.lang === 'zh-CN');
+    }
+    utterance.voice=voice?voice:null;
+    currentIndex = msg.id;
+    return utterance;
+}
 export function Say(props: Props) {
     const { t } = useTranslation()
     const [isSpeaking, setIsSpeaking] = useState(false)
@@ -32,30 +86,12 @@ export function Say(props: Props) {
     const { msg } = props;
     const { speech } = props;
 
-    const handleSay = (msg:Message,speech:String|null) => {
-        if (currentUtterance && currentIndex !== "-1") {
-            synth.cancel();
-            if(currentmediaRecorder)currentmediaRecorder.stop();
-            currentmediaRecorder=null;
+    const handleSay = (msg:Message,speech:string|null) => {
+        const utterance=presay(msg,speech);
+        if(utterance === null){
             setIsSpeaking(false);
-            if (msg.id === currentIndex) {
-                currentUtterance = null;
-                currentIndex = "-1";
-                return;
-            }
+            return;
         }
-        const txt = msg.content?.trim() || ''
-        if (!txt) return;
-        const utterance = new SpeechSynthesisUtterance(txt);
-        const voices = speechSynthesis.getVoices();
-        // "speech_lang": "Microsoft Yaoyao - Chinese (Simplified, PRC)",
-        // "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
-        let voice = voices.find(voice => voice.name === speech);
-        if (!voice) {
-            voice = voices.find(voice => voice.lang === 'zh-CN');
-        }
-        utterance.voice=voice?voice:null;
-        currentIndex = msg.id;
         // utterance.lang = voice.lang;
         // utterance.volume = 1;
         // utterance.rate = 0.8;
@@ -88,7 +124,7 @@ export function Say(props: Props) {
             filters: [{name: 'Audio Files', extensions: ['mp3']}]
         };
         let filename: string= options.defaultPath;
-        filename = await dialog.save(options) as string;
+        // filename = await dialog.save(options) as string;
         console.log('Selected file:', filename);
         const constraints = {audio: true};
         navigator.mediaDevices.getUserMedia(constraints)
@@ -104,8 +140,8 @@ export function Say(props: Props) {
                     stream.getTracks().forEach(track => track.stop());
                     if(filename!=null) {
                         blobPartToArrayBuffer(chunks).then((data)=> {
-                            taurifs.writeBinaryFile(filename,
-                                data as ArrayBuffer);
+                            // taurifs.writeBinaryFile(filename,
+                            //     data as ArrayBuffer);
                         });
                     }
                 });

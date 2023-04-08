@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import MenuItem from '@mui/material/MenuItem';
@@ -25,7 +25,7 @@ import 'github-markdown-css/github-markdown-light.css'
 import mila from 'markdown-it-link-attributes';
 import { useTranslation, getI18n } from 'react-i18next';
 import { Message, OpenAIRoleEnum, OpenAIRoleEnumType } from './types';
-import { Say } from "./Say";
+import { Say,handleSay } from "./Say";
 
 // copy button html content
 // join at markdown-it parsed
@@ -67,11 +67,13 @@ md.use(mila, { attrs: { target: "_blank", rel: "noopener" } })
 export interface Props {
     id?: string
     msg: Message
+    isReady: boolean
     showWordCount: boolean
     showTokenCount: boolean
     showModelName: boolean
     modelName: string
     speech:string
+    autoSpeech:boolean
     setMsg: (msg: Message) => void
     delMsg: () => void
     refreshMsg: () => void
@@ -83,7 +85,7 @@ function _Block(props: Props) {
     const { msg, setMsg } = props;
     const [isHovering, setIsHovering] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
-
+    // const [isReady] = useState(false);
     // for debounce each render when 'props.msg' change
     const renderTimer = useRef<NodeJS.Timeout>();
     // rendering state
@@ -124,6 +126,8 @@ function _Block(props: Props) {
         onStop();
         props.refreshMsg();
     }, [onStop, props.refreshMsg]);
+
+    // if (props.autoSpeech && props.isReady) handleSay(props);
 
     const tips: string[] = []
     if (props.showModelName) {
@@ -211,6 +215,7 @@ function _Block(props: Props) {
                                             wordBreak: 'break-word',
                                         }}
                                         dangerouslySetInnerHTML={{ __html: md.render(msg.content) }}
+
                                     />
                                 )
                             }
@@ -349,5 +354,8 @@ const StyledMenu = styled((props: MenuProps) => (
 export default function Block(props: Props) {
     return useMemo(() => {
         return <_Block {...props} />
-    }, [props.msg, props.showWordCount, props.showTokenCount, props.showModelName, props.modelName, props.speech])
+    }, [props.msg,
+        props.showWordCount, props.showTokenCount,
+        props.showModelName, props.modelName,
+        props.speech, props.autoSpeech])
 }

@@ -1,7 +1,16 @@
-import * as api from '@tauri-apps/api'
-import { Store } from "tauri-plugin-store-api";
+// import * as api from '@tauri-apps/api'
+// import { Store } from "tauri-plugin-store-api";
+// import {localStorage as Store} from "localStorage";
+// const store = new Store('./config.json')
 
-const store = new Store('./config.json')
+
+let store = require('localStorage')
+    , myValue = { foo: 'bar', baz: 'quux' }
+;
+
+store.setItem('myKey', JSON.stringify(myValue));
+// myValue = localStorage.getItem('myKey');
+
 
 setInterval(async () => {
     try {
@@ -12,16 +21,24 @@ setInterval(async () => {
 }, 5 * 60 * 1000)
 
 export const writeStore = async (key: string, value: any) => {
-    await store.set(key, value)
-    if (key === 'settings') {
-        await store.save()
-    }
+    // await store.set(key, value)
+    if (key === 'settings' ||
+        key === 'chat-sessions') {
+        // await store.save()
+        store.setItem(key, JSON.stringify(value));
+    }else
+        store.setItem(key, value);
+
 }
 
 export const readStore = async (key: string): Promise<any | undefined> => {
-    await handleCompatibilityV0_1()
-    const value = await store.get(key)
-    return value || undefined
+    // await handleCompatibilityV0_1()
+    let retobj:any|null = localStorage.getItem(key)
+    if (key === 'settings' ||
+        key === 'chat-sessions') {
+        retobj=JSON.parse(retobj)
+    }
+    return new Promise((resolve, reject)=>{resolve(retobj);});
 }
 
 async function handleCompatibilityV0_1() {
@@ -29,7 +46,7 @@ async function handleCompatibilityV0_1() {
     try {
         const handled = await store.get('hasHandleCompatibilityV0_1')
         if (!handled) {
-            const oldConfigJson = await api.fs.readTextFile('chatbox/config.json', { dir: api.fs.Dir.LocalData })
+            const oldConfigJson ='';// await api.fs.readTextFile('chatbox/config.json', { dir: api.fs.Dir.LocalData })
             const oldConfig = JSON.parse(oldConfigJson)
             for (const key in oldConfig) {
                 await store.set(key, oldConfig[key])
@@ -43,18 +60,18 @@ async function handleCompatibilityV0_1() {
 }
 
 export const shouldUseDarkColors = async (): Promise<boolean> => {
-    const theme = await api.window.appWindow.theme()
+    const theme = 'dark';//await api.window.appWindow.theme()
     return theme === 'dark'
 }
 
 export async function onSystemThemeChange(callback: () => void) {
-    return api.window.appWindow.onThemeChanged(callback)
+    return ;//api.window.appWindow.onThemeChanged(callback)
 }
 
 export const getVersion = async () => {
-    return api.app.getVersion()
+    return ;//api.app.getVersion()
 }
 
 export const openLink = async (url: string) => {
-    return api.shell.open(url)
+    return ;//api.shell.open(url)
 }

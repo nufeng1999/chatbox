@@ -12,6 +12,7 @@ export function getDefaultSettings(): Settings {
     return {
         openaiKey: '',
         speech: '',
+        autoSpeech: false,
         apiHost: 'https://api.openai.com',
         model: "gpt-3.5-turbo",
         maxContextSize: "4000",

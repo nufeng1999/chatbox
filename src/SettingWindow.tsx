@@ -104,7 +104,7 @@ export default function SettingWindow(props: Props) {
 
             const voices = speechSynthesis.getVoices();
             voices.forEach((voice) => {
-                console.log(voice.name); // 输出语音的名称
+                // console.log(voice.name); // 输出语音的名称
             })
             // console.log(voices);
             setVoices(voices);
@@ -176,6 +176,13 @@ export default function SettingWindow(props: Props) {
                         label={t('show estimated token count')}
                         checked={settingsEdit.showTokenCount}
                         onChange={(e, checked) => setSettingsEdit({ ...settingsEdit, showTokenCount: checked })}
+                    />
+                </FormGroup>
+                <FormGroup>
+                    <FormControlLabel control={<Switch />}
+                                      label={t('auto speech')}
+                                      checked={settingsEdit.autoSpeech}
+                                      onChange={(e, checked) => setSettingsEdit({ ...settingsEdit, autoSpeech: checked })}
                     />
                 </FormGroup>
                 <Accordion>

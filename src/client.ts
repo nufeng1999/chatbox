@@ -5,6 +5,7 @@ import { createParser } from 'eventsource-parser'
 export interface OnTextCallbackResult {
     // response content
     text: string;
+    frPos :number;
     // cancel for fetch
     cancel: () => void;
 }
@@ -16,8 +17,8 @@ export async function replay(
     maxTokens: string,
     modelName: string,
     msgs: Message[],
-    onText?: (option: OnTextCallbackResult) => void,
-    onError?: (error: Error) => void,
+    onText?: (option: OnTextCallbackResult) => number,
+    onError?: (error: Error) => void
 ) {
     if (msgs.length === 0) {
         throw new Error('No messages to replay')
@@ -71,6 +72,7 @@ export async function replay(
             }),
             signal: controller.signal,
         });
+        let frPos :number=0;
         await handleSSE(response, (message) => {
             if (message === '[DONE]') {
                 return;
@@ -83,7 +85,8 @@ export async function replay(
             if (text !== undefined) {
                 fullText += text
                 if (onText) {
-                    onText({ text: fullText, cancel })
+
+                    frPos=onText({ text: fullText,frPos, cancel })
                 }
             }
         })
@@ -118,7 +121,7 @@ export async function handleSSE(response: Response, onMessage: (message: string)
             onMessage(event.data)
         }
     })
-    for await (const chunk of iterableStreamAsync(response.body)) {
+    for  await (const chunk of iterableStreamAsync(response.body)) {
         const str = new TextDecoder().decode(chunk)
         parser.feed(str)
     }

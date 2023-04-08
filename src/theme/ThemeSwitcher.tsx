@@ -63,20 +63,20 @@ export function ThemeSwitcherProvider(props: ThemeSwitcherProviderProps) {
 
     const theme = useMemo(() => createTheme(fetchThemeDesign(realMode)), [realMode]);
 
-    useLayoutEffect(() => {
-        if (mode !== ThemeMode.System) return;
-        // watch system theme change
-        const handleModeChange = async () => {
-            const isDark = await api.shouldUseDarkColors();
-            changeRealMode(mode, isDark ? ThemeMode.Dark : ThemeMode.Light);
-        };
-
-        handleModeChange();
-        const disposePromise =  api.onSystemThemeChange(handleModeChange);
-        return () => {
-            disposePromise.then((dispose) => dispose());
-        }
-    }, [mode]);
+    // useLayoutEffect(() => {
+    //     if (mode !== ThemeMode.System) return;
+    //     // watch system theme change
+    //     const handleModeChange = async () => {
+    //         const isDark = await api.shouldUseDarkColors();
+    //         changeRealMode(mode, isDark ? ThemeMode.Dark : ThemeMode.Light);
+    //     };
+    //
+    //     handleModeChange();
+    //     const disposePromise =  api.onSystemThemeChange(handleModeChange);
+    //     return () => {
+    //         disposePromise.then((dispose) => dispose());
+    //     }
+    // }, [mode]);
 
     useEffect(() => {
         if (settings.theme !== mode) {

@@ -33,6 +33,7 @@ export function createSession(modelName: string, name: string = "Untitled"): Ses
 export interface Settings {
     openaiKey: string
     speech: string
+    autoSpeech?: boolean
     apiHost: string
     model: string
     maxContextSize: string

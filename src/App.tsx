@@ -23,6 +23,7 @@ import * as api from './api';
 import { ThemeSwitcherProvider } from './theme/ThemeSwitcher';
 import { useTranslation } from "react-i18next";
 import icon from './icon.png'
+import {handleSay} from "./Say";
 
 const { useEffect, useState } = React
 
@@ -32,6 +33,8 @@ function Main() {
 
     // 是否展示设置窗口
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
+    let isReady=false;
+    let autoSpeedbuffer:Array<string>=new Array<string>();
     useEffect(() => {
         if (store.needSetting) {
             setOpenSettingWindow(true)
@@ -141,10 +144,11 @@ function Main() {
             store.settings.maxTokens,
             session.model,
             prompts.nameConversation(session.messages.slice(0, 3)),
-            ({ text: name }) => {
+            ({ text: name,frPos }):number => {
                 name = name.replace(/['"“”]/g, '')
                 session.name = name
                 store.updateChatSession(session)
+                return frPos;
             },
             (err) => {
                 console.log(err)
@@ -161,7 +165,7 @@ function Main() {
             store.settings.maxTokens,
             session.model,
             promptMsgs,
-            ({ text, cancel }) => {
+            ({ text,frPos , cancel }):number => {
                 for (let i = 0; i < session.messages.length; i++) {
                     if (session.messages[i].id === targetMsg.id) {
                         session.messages[i] = {
@@ -169,11 +173,25 @@ function Main() {
                             content: text,
                             cancel,
                         }
-
+                        //查找标点符号
+                        let l:number=text.indexOf('。',frPos)
+                        if(l<0)
+                            l=text.indexOf('？',frPos)
+                        if(l<0)
+                            l=text.indexOf('！',frPos)
+                        if(l<0)
+                            l=text.indexOf('：',frPos)
+                        if (l>frPos) {
+                            let substr = text.substring(frPos, l)
+                            autoSpeedbuffer.push(substr)
+                            // if (store.settings.autoSpeech ) handleSay(targetMsg, store.settings.speech);
+                        }
+                        frPos=l
                         break;
                     }
                 }
                 store.updateChatSession(session)
+                return frPos;
             },
             (err) => {
                 for (let i = 0; i < session.messages.length; i++) {
@@ -368,12 +386,15 @@ function Main() {
                             ref={messageListRef}
                         >
                             {
-                                store.currentSession.messages.map((msg, ix) => (
+                                store.currentSession.messages.map((msg, ix ,{length}) => {
+                                    return (
                                     <Block id={msg.id} key={msg.id} msg={msg}
+                                           isReady={isReady}
                                         showWordCount={store.settings.showWordCount || false}
                                         showTokenCount={store.settings.showTokenCount || false}
                                         showModelName={store.settings.showModelName || false}
                                         speech={store.settings.speech || ''}
+                                        autoSpeech={store.settings.autoSpeech || false}
                                         modelName={store.currentSession.model}
                                         setMsg={(updated) => {
                                             store.currentSession.messages = store.currentSession.messages.map((m) => {
@@ -413,7 +434,8 @@ function Main() {
                                             setMessageInput(input)
                                         }}
                                     />
-                                ))
+                                )}
+                                )
                             }
                         </List>
                         <Box sx={{ padding: '20px 0' }}>
@@ -426,7 +448,9 @@ function Main() {
                                         const newAssistantMsg = createMessage('assistant', '....')
                                         store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
                                         store.updateChatSession(store.currentSession)
+                                        console.log("newAssistantMsg  "+newAssistantMsg.content)
                                         generate(store.currentSession, promptsMsgs, newAssistantMsg)
+                                        // if (store.settings.autoSpeech) handleSay(newAssistantMsg,store.settings.speech);
                                         messageScrollRef.current = { msgId: newAssistantMsg.id, smooth: true }
                                     } else {
                                         store.currentSession.messages = [...store.currentSession.messages, newUserMsg]
