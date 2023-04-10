@@ -7,13 +7,15 @@ import VoiceOverOffIcon from "@mui/icons-material/VoiceOverOff";
 import RecordVoiceOverIcon from "@mui/icons-material/RecordVoiceOver";
 import {useTranslation} from "react-i18next";
 import {bool} from "prop-types";
+const MicRecorder = require('mic-recorder-to-mp3');
 
-let currentmediaRecorder : MediaRecorder | null = null;
+let currentMediaRecorder : any = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentIndex: string = "-1";
 const synth = window.speechSynthesis;
 
 let isSpeaking:boolean=false;
+let isRecording:boolean=false;
 function blobPartToArrayBuffer(blobParts:BlobPart[]) {
     return new Promise ((resolve, reject) => {
         const fileReader = new FileReader();
@@ -26,12 +28,67 @@ function blobPartToArrayBuffer(blobParts:BlobPart[]) {
         fileReader.readAsArrayBuffer(new Blob(blobParts));
     });
 }
+
+function record_stop() {
+    const date = new Date();
+    const formats = {
+        yyyy: date.getFullYear(),
+        M: date.getMonth() + 1,
+        d: date.getDate(),
+        HH: date.getHours(),
+        mm: date.getMinutes(),
+        ss: date.getSeconds(),
+        // SSS:date.getMilliseconds()
+    };
+    let dateStr = `${formats.yyyy}${formats.M}${formats.d}${formats.HH}${formats.mm}${formats.ss}`;
+    let filename: string=dateStr+'.mp3'; //options.defaultPath;
+    console.log('Selected file:', filename);
+    if(currentMediaRecorder!=null) {
+        currentMediaRecorder
+            .stop()
+            .getMp3().then((data: any) => {
+            // do what ever you want with buffer and blob
+            // Example: Create a mp3 file and play
+            // const file = new File(data[0] as BlobPart[], filename, {
+            //     lastModified: Date.now()
+            // });
+            let url = URL.createObjectURL(data[1] as Blob)
+            // const player = new Audio(url);
+            // player.play();
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = filename;
+            anchor.click();
+            currentMediaRecorder=null;
+        }).catch((e: any) => {
+            alert('We could not retrieve your message');
+            console.log(e.message);
+        });
+    }
+    isRecording = false;
+}
+function record_start(){
+    isRecording=true
+    // New instance
+    if(currentMediaRecorder==null) {
+        currentMediaRecorder = new MicRecorder({
+            bitRate: 128
+        });
+    }
+    currentMediaRecorder.start().then(() => {
+        // something else
+    }).catch((e: any) => {
+        isRecording=false;
+        console.error(e.message);
+    });
+
+
+}
 function synth_cancel(msg:string|Message):boolean{
     if (currentUtterance && currentIndex !== "-1") {
         synth.cancel();
         isSpeaking=false
-        if(currentmediaRecorder)currentmediaRecorder.stop();
-        currentmediaRecorder=null;
+        record_stop()
         if(typeof msg !== 'string') {
             if (msg.id === currentIndex) {
                 currentUtterance = null;
@@ -65,10 +122,10 @@ export function handleSay(msg:string|Message,speech:string|null){
     }
 
     utterance.onend = () => {
-        if(currentmediaRecorder)
-            currentmediaRecorder.stop();
+        if(currentMediaRecorder)
+            currentMediaRecorder.stop();
         console.log("朗读结束了。");
-        currentmediaRecorder=null;
+        currentMediaRecorder=null;
         isSpeaking=false;
         // setIsSpeaking(false);
         currentUtterance = null;
@@ -107,7 +164,7 @@ export function Say(props: Props) {
     const { msg } = props;
     const { speech } = props;
 
-    const handleSay = (msg:Message,speech:string|null) => {
+    const handleSpeech = (msg:Message,speech:string|null) => {
         const utterance=presay(msg,speech);
         if(utterance === null){
             setIsSpeaking(false);
@@ -118,12 +175,11 @@ export function Say(props: Props) {
         // utterance.rate = 0.8;
         // utterance.pitch = 1;
         if(checked) {
-            audioSave().then(() => {
-                synth.speak(utterance);
-                setIsSpeaking(true);
-                currentUtterance = utterance;
-                currentIndex = msg.id;
-            });
+            record_start();
+            setIsSpeaking(true);
+            synth.speak(utterance);
+            currentUtterance = utterance;
+            currentIndex = msg.id;
         }else{
             synth.speak(utterance);
             setIsSpeaking(true);
@@ -131,64 +187,36 @@ export function Say(props: Props) {
             currentIndex = msg.id;
         }
         utterance.onend = () => {
-            if(currentmediaRecorder)
-                currentmediaRecorder.stop();
-            currentmediaRecorder=null;
+            record_stop()
             setIsSpeaking(false);
             currentUtterance = null;
             currentIndex = "-1";
         }
     };
-    const audioSave = async () => {
-        const options = {
-            defaultPath: 'audio.mp3',
-            filters: [{name: 'Audio Files', extensions: ['mp3']}]
-        };
-        let filename: string= options.defaultPath;
-        // filename = await dialog.save(options) as string;
-        console.log('Selected file:', filename);
-        const constraints = {audio: true};
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
-                const chunks: BlobPart[] | undefined = [];
-                const mediaRecorder = new MediaRecorder(stream);
-                currentmediaRecorder = mediaRecorder;
-                mediaRecorder.addEventListener('dataavailable', event => {
-                    chunks.push(event.data);
-                });
-
-                mediaRecorder.addEventListener('stop', () => {
-                    stream.getTracks().forEach(track => track.stop());
-                    if(filename!=null) {
-                        blobPartToArrayBuffer(chunks).then((data)=> {
-                            // taurifs.writeBinaryFile(filename,
-                            //     data as ArrayBuffer);
-                        });
-                    }
-                });
-                mediaRecorder.start();
-                setTimeout(() => {
-                    mediaRecorder.stop();
-                    stream.getTracks().forEach(track => track.stop());
-                }, 1000*60*10);
-            })
-            .catch(error => {
-                console.error(error);
-            });
+    const saveRecording=(blob:Blob, filename:string) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute("style","display: none")
+        // a.style = 'display: none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
     };
 
     return (
         isSpeaking
         ?(
             <IconButton onClick={()=> {
-                handleSay(msg,speech)
+                handleSpeech(msg,speech)
             }} size='large' color='primary'>
                 <VoiceOverOffIcon fontSize='small' />
             </IconButton>)
         : (
             <>
                 <IconButton onClick={()=>{
-                    handleSay(msg,speech)
+                    handleSpeech(msg,speech)
                 }} size='large' color='primary'>
                     <RecordVoiceOverIcon fontSize='small' />
                 </IconButton>

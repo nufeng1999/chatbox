@@ -4,7 +4,7 @@ const { exec } = require('child_process');
 const os = require('os');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, '')));
