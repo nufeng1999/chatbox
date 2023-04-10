@@ -27,13 +27,14 @@ import { useTranslation } from "react-i18next";
 import icon from './icon.png'
 import {handleSay,IsSpeaking} from "./Say";
 import { isMobile } from 'react-device-detect';
+import LeftSideBar from './LeftSideBar';
 
 const { useEffect, useState } = React
 
 function Main() {
     const { t } = useTranslation()
     const store = useStore()
-    const [sideBarVisible, setSideBarVisible] = useState(true)
+    const [leftSideBarVisible, setLeftSideBarVisible] = React.useState(true)
     // 是否展示设置窗口
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
     let isReady=false;
@@ -190,7 +191,7 @@ function Main() {
                             cancel,
                         }
 
-                        const regex=/(？|！|：|。)/g
+                        const regex=/(？|！|：|。|([a-zA-Z])(?=[;\?.!:])|)/g
                         regex.lastIndex=frPos
                         let match=regex.exec(text);
                         if (match!=null && match.index>frPos) {
@@ -232,165 +233,21 @@ function Main() {
             sessionListRef.current.scrollTo(0, 0)
         }
     }
-    const renderSideBar = () => {
-        if (!sideBarVisible) {
-            return null
-        }
-        return (
-            <Grid item xs={3}
-                  sx={{
-                      height: '100%',
-                  }}
-            >
-                <Stack
-                    sx={{
-                        height: '100%',
-                        padding: '20px 0',
-                    }}
-                    spacing={2}
-                >
-                    <Toolbar variant="dense" sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: 'space-between'
-                    }} >
-                        <img src={icon} style={{
-                            width: '35px',
-                            height: '35px',
-                            marginRight: '5px',
-                        }} />
-                        {
-                            (isMobile)?(
-                            <></>
-                            ):
-                            (
-                                <>
-                                <Typography variant="h5" color="inherit" component="div">
-                                Chatbox
-                                </Typography>
-                                <IconButton onClick={() => setSideBarVisible(false)} edge="end" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
-                                    <ArrowBackIosNewIcon onClick={() => setSideBarVisible(false)}/>
-                                </IconButton>
-                                </>
-                            )
-                        }
-                    </Toolbar>
-                    {
-                        (isMobile)?(<></>):(
-                            <Divider />
-                        )
-                    }
-                    <MenuList
-                        sx={{
-                            width: '100%',
-                            // bgcolor: 'background.paper',
-                            position: 'relative',
-                            overflow: 'auto',
-                            // height: '30vh',
-                            height: '60vh',
-                            '& ul': { padding: 0 },
-                        }}
-                        className="scroll"
-                        subheader={
-                            <ListSubheader component="div">
-                                {t('chat')}
-                            </ListSubheader>
-                        }
-                    >
-                        {
-                            store.chatSessions.map((session, ix) => (
-                                <SessionItem key={session.id}
-                                             selected={store.currentSession.id === session.id}
-                                             session={session}
-                                             switchMe={() => {
-                                                 store.switchCurrentSession(session)
-                                                 document.getElementById('message-input')?.focus() // better way?
-                                             }}
-                                             deleteMe={() => store.deleteChatSession(session)}
-                                             copyMe={() => {
-                                                 const newSession = createSession(session.model, session.name + ' copied')
-                                                 newSession.messages = session.messages
-                                                 store.createChatSession(newSession, ix)
-                                             }}
-                                             editMe={() => setConfigureChatConfig(session)}
-                                />
-                            ))
-                        }
-                    </MenuList>
 
-                    <Divider />
-                    {
-                        (isMobile)?(
-                                <IconButton onClick={() => setSideBarVisible(false)} edge="end" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
-                                    <ArrowBackIosNewIcon onClick={() => setSideBarVisible(false)}/>
-                                </IconButton>
-                        ):(
-                            <></>
-                        )
-                    }
-                    <MenuItem onClick={() => store.createEmptyChatSession()} >
-                        <ListItemIcon>
-                            <IconButton><AddIcon fontSize="small" /></IconButton>
-                        </ListItemIcon>
-                        {
-                        // (isMobile)?(<></>):(
-                        // <ListItemText>
-                        //     {t('new chat')}
-                        // </ListItemText>
-                        // )
-                        }
-                        <Typography variant="body2" color="text.secondary">
-                            {/* ⌘N */}
-                        </Typography>
-                    </MenuItem>
-                    <MenuItem onClick={() => {
-                        setOpenSettingWindow(true)
-                    }}
-                    >
-                        <ListItemIcon>
-                            <IconButton><SettingsIcon fontSize="small" /></IconButton>
-                        </ListItemIcon>
-                        {
-                        //     (isMobile)?(<></>):(
-                        // <ListItemText>
-                        //     {t('settings')}
-                        // </ListItemText>
-                        //     )
-                        }
-                        <Typography variant="body2" color="text.secondary">
-                            {/* ⌘N */}
-                        </Typography>
-                    </MenuItem>
-
-                    <MenuItem onClick={() => {
-                        // setNeedCheckUpdate(false)
-                        api.openLink('https://github.com/nufeng1999/chatbox')
-                    }}>
-                        <ListItemIcon>
-                            <IconButton>
-                                <InfoOutlinedIcon fontSize="small" />
-                            </IconButton>
-                        </ListItemIcon>
-                        {/*<ListItemText>*/}
-                        {/*    <Badge color="primary" variant="dot" invisible={!needCheckUpdate} sx={{ paddingRight: '8px' }} >*/}
-                        {/*        <Typography sx={{ opacity: 0.5 }}>*/}
-                        {/*            {t('version')}: {store.version}*/}
-                        {/*        </Typography>*/}
-                        {/*    </Badge>*/}
-                        {/*</ListItemText>*/}
-                    </MenuItem>
-                </Stack>
-
-            </Grid>
-        )
-    }
     return (
         <Box sx={{ height: '100vh' }}>
             <Grid container sx={{
                 flexWrap: 'nowrap',
                 height: '100%',
             }}>
-                {renderSideBar()}
+                <LeftSideBar leftSideBarVisible={leftSideBarVisible}
+                             setLeftSideBarVisible={setLeftSideBarVisible}
+                             openSettingWindow={openSettingWindow}
+                             setOpenSettingWindow={setOpenSettingWindow}
+                             configureChatConfig={configureChatConfig}
+                             setConfigureChatConfig={setConfigureChatConfig}
+                />
+
                 <Grid item xs
                     sx={{
                         height: '100%',
@@ -398,27 +255,29 @@ function Main() {
                 >
                     <Stack sx={{
                         height: '100%',
-                        padding: '20px 0',
+                        padding: '0px 0',
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                     }} >
                         <Box>
-                            <Toolbar>
-                                {!sideBarVisible && (
-                                    <IconButton onClick={() => setSideBarVisible(true)} edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
+                            <Toolbar variant="dense">
+                                {!leftSideBarVisible && (
+                                    <IconButton onClick={() => setLeftSideBarVisible(true)}
+                                                edge="start" color="inherit"
+                                                aria-label="menu" sx={{ mr: 1 }}>
                                         <ArrowForwardIosIcon/>
                                     </IconButton>
                                 )}
-                                <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}>
+                                <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 1 }}>
                                     <ChatBubbleOutlineOutlinedIcon />
                                 </IconButton>
-                                <Typography variant="h6" color="inherit" component="div" noWrap sx={{ flexGrow: 1 }}>
+                                <Typography variant="body2" color="inherit" component="div" noWrap sx={{ flexGrow: 1 }}>
                                     <span onClick={()=>{editCurrentSession()}} style={{cursor: 'pointer'}}>
                                         {store.currentSession.name}
                                     </span>
                                 </Typography>
-                                <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 2 }}
+                                <IconButton edge="start" color="inherit" aria-label="menu" sx={{ mr: 1 }}
                                     onClick={() => setSessionClean(store.currentSession)}
                                 >
                                     <CleaningServicesIcon />
@@ -524,18 +383,6 @@ function Main() {
                     }}
                     close={() => setOpenSettingWindow(false)}
                 />
-                {
-                    configureChatConfig !== null && (
-                        <ChatConfigWindow open={configureChatConfig !== null}
-                            session={configureChatConfig}
-                            save={(session) => {
-                                store.updateChatSession(session)
-                                setConfigureChatConfig(null)
-                            }}
-                            close={() => setConfigureChatConfig(null)}
-                        />
-                    )
-                }
                 {
                     sessionClean !== null && (
                         <CleanWidnow open={sessionClean !== null}

@@ -14,6 +14,7 @@ import MoreHorizOutlinedIcon from '@mui/icons-material/MoreHorizOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import StyledMenu from './StyledMenu';
 import { useTranslation } from "react-i18next";
+import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
 
 const { useState } = React
 
@@ -29,7 +30,7 @@ export interface Props {
 export default function SessionItem(props: Props) {
     const { t } = useTranslation()
     const { session, selected, switchMe, deleteMe, copyMe, editMe } = props
-    const [hovering, setHovering] = useState(false)
+    const [hovering, setHovering] = useState(true)
     const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -57,22 +58,18 @@ export default function SessionItem(props: Props) {
             }}
         >
             <ListItemIcon>
-                <IconButton><ChatBubbleOutlineOutlinedIcon fontSize="small" /></IconButton>
+                <IconButton title={session.name}><ChatBubbleOutlineOutlinedIcon fontSize="small"/></IconButton>
+                {
+                    <IconButton onClick={handleClick} sx={{color: 'primary.main'}} >
+                        {
+                            hovering && (
+
+                                <MoreVertOutlinedIcon fontSize="small" />
+                            )
+                        }
+                    </IconButton>
+                }
             </ListItemIcon>
-            <ListItemText>
-                <Typography variant="inherit" noWrap>
-                    {session.name}
-                </Typography>
-            </ListItemText>
-            {
-                <IconButton onClick={handleClick} sx={{color: 'primary.main'}} >
-                    {
-                        hovering && (
-                            <MoreHorizOutlinedIcon fontSize="small" />
-                        )
-                    }
-                </IconButton>
-            }
             <StyledMenu
                 MenuListProps={{
                     'aria-labelledby': 'long-button',

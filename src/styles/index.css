@@ -16,7 +16,7 @@ code {
 /* START of code block actions */
 .code-block-wrapper {
     position: relative;
-    max-width: 50vw;
+    max-width: 95vw;
 }
 
 .code-block {
