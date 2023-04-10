@@ -10,7 +10,7 @@ import {
     IconButton, Button, Stack, Grid, MenuItem, ListItemIcon, Typography, Divider,
     TextField,
 } from '@mui/material';
-import { Session, createSession, Message, createMessage } from './types'
+import {Session, createSession, Message, createMessage, Settings} from './types'
 import useStore from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
@@ -28,8 +28,11 @@ import icon from './icon.png'
 import {handleSay,IsSpeaking} from "./Say";
 import { isMobile } from 'react-device-detect';
 import LeftSideBar from './LeftSideBar';
-
+import MicOffIcon from './mic_off.png';
+import MicOnIcon from './mic_on.png';
 const { useEffect, useState } = React
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import {display} from "@mui/system";
 
 function Main() {
     const { t } = useTranslation()
@@ -191,7 +194,7 @@ function Main() {
                             cancel,
                         }
 
-                        const regex=/(？|！|：|。|([a-zA-Z])(?=[;\?.!:])|)/g
+                        const regex=/(？|！|：|。|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
                         regex.lastIndex=frPos
                         let match=regex.exec(text);
                         if (match!=null && match.index>frPos) {
@@ -240,7 +243,8 @@ function Main() {
                 flexWrap: 'nowrap',
                 height: '100%',
             }}>
-                <LeftSideBar leftSideBarVisible={leftSideBarVisible}
+                <LeftSideBar store={store}
+                             leftSideBarVisible={leftSideBarVisible}
                              setLeftSideBarVisible={setLeftSideBarVisible}
                              openSettingWindow={openSettingWindow}
                              setOpenSettingWindow={setOpenSettingWindow}
@@ -262,7 +266,13 @@ function Main() {
                     }} >
                         <Box>
                             <Toolbar variant="dense">
-                                {!leftSideBarVisible && (
+                                {leftSideBarVisible?(
+                                    <IconButton onClick={() => setLeftSideBarVisible(false)}
+                                                edge="end" color="inherit"
+                                                aria-label="menu" sx={{mr: 2}}>
+                                        <ArrowBackIosNewIcon/>
+                                    </IconButton>
+                                    ):(
                                     <IconButton onClick={() => setLeftSideBarVisible(true)}
                                                 edge="start" color="inherit"
                                                 aria-label="menu" sx={{ mr: 1 }}>
@@ -351,7 +361,7 @@ function Main() {
                             }
                         </List>
                         <Box sx={{ padding: '20px 0' }}>
-                            <MessageInput
+                            <MessageInput settings={store.settings}
                                 messageInput={messageInput}
                                 setMessageInput={setMessageInput}
                                 onSubmit={async (newUserMsg: Message, needGenerating = true) => {
@@ -384,6 +394,18 @@ function Main() {
                     close={() => setOpenSettingWindow(false)}
                 />
                 {
+                    configureChatConfig !== null && (
+                        <ChatConfigWindow open={configureChatConfig !== null}
+                                          session={configureChatConfig}
+                                          save={(session) => {
+                                              store.updateChatSession(session)
+                                              setConfigureChatConfig(null)
+                                          }}
+                                          close={() => setConfigureChatConfig(null)}
+                        />
+                    )
+                }
+                {
                     sessionClean !== null && (
                         <CleanWidnow open={sessionClean !== null}
                             session={sessionClean}
@@ -415,19 +437,55 @@ function Main() {
     );
 }
 
+interface RecognitionEvent{
+    results:SpeechRecognitionResultList[][];
+}
 function MessageInput(props: {
+    settings:Settings
     onSubmit: (newMsg: Message, needGenerating?: boolean) => void
     messageInput: string
     setMessageInput: (value: string) => void
 }) {
+    const {
+        transcript,
+        listening,
+        resetTranscript,
+        browserSupportsSpeechRecognition
+    } = useSpeechRecognition();
+    const [isTalking, setIsTalking] = React.useState(false)
     const { t } = useTranslation()
     const { messageInput, setMessageInput } = props
     const submit = (needGenerating = true) => {
+        if(isTalking) {
+            if (transcript.length === 0) {
+                return;
+            }
+            SpeechRecognition.stopListening();
+            setIsTalking(false);
+            props.onSubmit(createMessage('user', transcript), needGenerating)
+            resetTranscript()
+            setMessageInput('')
+            return;
+        }
         if (messageInput.length === 0) {
-            return
+            return;
         }
         props.onSubmit(createMessage('user', messageInput), needGenerating)
+        resetTranscript()
         setMessageInput('')
+    }
+    // let isTalking=false;
+    const talking = () => {
+        if(isTalking){
+            setMessageInput(transcript)
+            SpeechRecognition.stopListening();
+            setIsTalking(false);
+            return;
+        }
+        resetTranscript()
+        SpeechRecognition.startListening({ language: props.settings.language,continuous: true})
+        setIsTalking(true)
+        return;
     }
     return (
         <form onSubmit={(e) => {
@@ -436,7 +494,30 @@ function MessageInput(props: {
         }}>
             <Stack direction="column" spacing={1} >
                 <Grid container spacing={2}>
-                    <Grid item xs>
+                    <Grid item xs>{
+                        isTalking?(
+                        <TextField
+                            multiline
+                            label="Prompt"
+                            value={transcript}
+                            onChange={(event) => setMessageInput(event.target.value)}
+                            fullWidth
+                            maxRows={12}
+                            autoFocus
+                            id='message-input'
+                            onKeyDown={(event) => {
+                                if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                                    event.preventDefault()
+                                    submit()
+                                    return
+                                }
+                                if (event.keyCode === 13 && event.ctrlKey) {
+                                    event.preventDefault()
+                                    submit(false)
+                                    return
+                                }
+                            }}
+                        />):(
                         <TextField
                             multiline
                             label="Prompt"
@@ -458,7 +539,19 @@ function MessageInput(props: {
                                     return
                                 }
                             }}
-                        />
+                        />)
+                    }
+                    </Grid>
+                    <Grid item xs="auto">
+                        <Button  variant="contained" size='large' disabled={!isTalking && listening} onClick={talking}
+                                style={{ fontSize: '16px', padding: '10px 20px' }}>
+                            {listening?(
+                            <img src={MicOffIcon} style={{maxWidth: '28px', maxHeight: '28px'}}  alt="MicOff" />
+                            ):(
+                            <img src={MicOnIcon} style={{maxWidth: '28px', maxHeight: '28px'}} alt="MicOn" />
+                            )
+                            }
+                        </Button>
                     </Grid>
                     <Grid item xs="auto">
                         <Button type='submit' variant="contained" size='large'

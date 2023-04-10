@@ -24,7 +24,16 @@ import SessionItem from "./SessionItem";
 import {createMessage, createSession, Message, Session, Settings} from "./types";
 import useStore from './store'
 
+interface Store {
+    chatSessions:Session[]
+    currentSession:Session
+    switchCurrentSession(session:Session):void
+    deleteChatSession(session:Session):void
+    createChatSession(newSession:Session, ix?: number):void
+    createEmptyChatSession():void
+}
 interface Props {
+    store: Store
     leftSideBarVisible:boolean
     setLeftSideBarVisible(leftSideBarVisible:boolean):void
     openSettingWindow:boolean
@@ -35,10 +44,11 @@ interface Props {
 
 export default function LeftSideBar(props: Props) {
     const {t} = useTranslation()
+    const {store}=props;
     const {leftSideBarVisible,setLeftSideBarVisible}=props;
     const {openSettingWindow, setOpenSettingWindow} = props;
     const {configureChatConfig, setConfigureChatConfig}= props;
-    const store = useStore()
+    // const store = useStore()
     const messageListRef = useRef<HTMLDivElement>(null)
 
     if (!leftSideBarVisible) {
@@ -114,13 +124,6 @@ export default function LeftSideBar(props: Props) {
                     </MenuList>
 
                     <Divider/>
-                    <MenuItem>
-                        <IconButton onClick={() => setLeftSideBarVisible(false)}
-                                    edge="end" color="inherit"
-                                    aria-label="menu" sx={{mr: 2}}>
-                            <ArrowBackIosNewIcon onClick={() => setLeftSideBarVisible(false)}/>
-                        </IconButton>
-                    </MenuItem>
                     <MenuItem onClick={() => store.createEmptyChatSession()}>
                         <ListItemIcon>
                             <IconButton><AddIcon fontSize="small"/></IconButton>
