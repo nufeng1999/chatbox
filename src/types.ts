@@ -13,7 +13,9 @@ export interface Session{
     model: string
 }
 
-export function createMessage(role: OpenAIRoleEnumType = OpenAIRoleEnum.User, content: string = ''): Message {
+export function createMessage(
+    role: OpenAIRoleEnumType = OpenAIRoleEnum.User,
+    content: string = ''): Message {
     return {
         id: uuidv4(),
         content: content,

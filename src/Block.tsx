@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, {useEffect, useState, useRef, useMemo, useCallback} from 'react';
 import Box from '@mui/material/Box';
 import Avatar from '@mui/material/Avatar';
 import MenuItem from '@mui/material/MenuItem';
-import { IconButton, Divider, ListItem,
+import {
+    IconButton, Divider, ListItem,
     Typography, Grid, TextField, Menu,
-    Stack, MenuProps } from '@mui/material';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
+    Stack, MenuProps
+} from '@mui/material';
+import Select, {SelectChangeEvent} from '@mui/material/Select';
 import PersonIcon from '@mui/icons-material/Person';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -16,7 +18,7 @@ import 'katex/dist/katex.min.css'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import CheckIcon from '@mui/icons-material/Check';
 import EditIcon from '@mui/icons-material/Edit';
-import { styled, alpha } from '@mui/material/styles';
+import {styled, alpha} from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StopIcon from '@mui/icons-material/Stop';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -25,10 +27,10 @@ import * as wordCount from './utils'
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import 'github-markdown-css/github-markdown-light.css'
 import mila from 'markdown-it-link-attributes';
-import { useTranslation, getI18n } from 'react-i18next';
-import { Message, OpenAIRoleEnum, OpenAIRoleEnumType } from './types';
-import { Say,handleSay } from "./Say";
-
+import {useTranslation, getI18n} from 'react-i18next';
+import {Message, OpenAIRoleEnum, OpenAIRoleEnumType} from './types';
+import {Say, handleSay} from "./Say";
+import waitingsvg from "./waiting.svg";
 // copy button html content
 // join at markdown-it parsed
 const getCodeCopyButtonHTML = () => {
@@ -42,7 +44,7 @@ const md = new MarkdownIt({
         let content = str
         if (lang && hljs.getLanguage(lang)) {
             try {
-                content = hljs.highlight(str, { language: lang, ignoreIllegals: true }).value
+                content = hljs.highlight(str, {language: lang, ignoreIllegals: true}).value
             } catch (e) {
                 console.log(e)
                 return str
@@ -63,8 +65,8 @@ const md = new MarkdownIt({
     },
 });
 
-md.use(mdKatex, { blockClass: 'katexmath-block rounded-md p-[10px]', errorColor: ' #cc0000' })
-md.use(mila, { attrs: { target: "_blank", rel: "noopener" } })
+md.use(mdKatex, {blockClass: 'katexmath-block rounded-md p-[10px]', errorColor: ' #cc0000'})
+md.use(mila, {attrs: {target: "_blank", rel: "noopener"}})
 
 export interface Props {
     id?: string
@@ -74,18 +76,19 @@ export interface Props {
     showTokenCount: boolean
     showModelName: boolean
     modelName: string
-    speech:string
-    autoSpeedbuffer:Array<string>
-    autoSpeech:boolean
+    speech: string
+    autoSpeedbuffer: Array<string>
+    autoSpeech: boolean
     setMsg: (msg: Message) => void
     delMsg: () => void
     refreshMsg: () => void
     copyMsg: () => void
     quoteMsg: () => void
 }
+
 function _Block(props: Props) {
-    const { t } = useTranslation()
-    const { msg, setMsg,autoSpeedbuffer } = props;
+    const {t} = useTranslation()
+    const {msg, setMsg, autoSpeedbuffer} = props;
 
     const [isHovering, setIsHovering] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -164,26 +167,26 @@ function _Block(props: Props) {
                 msg?.role === OpenAIRoleEnum.Assistant ? 'assistant-msg' : 'user-msg',
             ].join(' ')}
         >
-            <Grid container spacing={2}>
+            <Grid container spacing={2} width='100%'>
                 <Grid item>
                     {
                         isEditing ? (
                             <Select
                                 value={msg.role}
                                 onChange={(e: SelectChangeEvent) => {
-                                    setMsg && setMsg({ ...msg, role: e.target.value as OpenAIRoleEnumType })
+                                    setMsg && setMsg({...msg, role: e.target.value as OpenAIRoleEnumType})
                                 }}
                                 size='small'
                                 id={msg.id + 'select'}
                             >
                                 <MenuItem value={OpenAIRoleEnum.System}>
-                                    <Avatar ><SettingsIcon /></Avatar>
+                                    <Avatar><SettingsIcon/></Avatar>
                                 </MenuItem>
                                 <MenuItem value={OpenAIRoleEnum.User}>
-                                    <Avatar><PersonIcon /></Avatar>
+                                    <Avatar><PersonIcon/></Avatar>
                                 </MenuItem>
                                 <MenuItem value={OpenAIRoleEnum.Assistant}>
-                                    <Avatar><SmartToyIcon /></Avatar>
+                                    <Avatar><SmartToyIcon/></Avatar>
                                 </MenuItem>
                             </Select>
                         ) : (
@@ -199,123 +202,126 @@ function _Block(props: Props) {
                 <Grid item xs={11} sm container>
                     <Grid item xs container direction="column" spacing={2}>
                         <Stack spacing={2}>
-                        <Grid item xs={12} sx={{maxHeight:'32px',}}>
-                            {
-                                isEditing ? (
-                                    <>
-                                        <IconButton onClick={() => setIsEditing(false)} size='large' color='primary'>
-                                            <CheckIcon />
-                                        </IconButton>
-                                    </>
-                                ) : (
-                                    (
-                                        <><IconButton>
-                                            {{
-                                                        assistant: <Avatar><SmartToyIcon /></Avatar>,
-                                                        user: <Avatar><PersonIcon /></Avatar>,
-                                                        system: <Avatar><SettingsIcon /></Avatar>
-                                            }[msg.role]}
-                                        </IconButton>
-                                        <IconButton>
-                                            <Typography variant="overline" component="div">
-                                                {t(msg.role)}
-                                            </Typography>
-                                        </IconButton>
-                                            {
-                                                mayRendering
-                                                    ? (
-                                                        <IconButton onClick={onStop} size='large' color='primary'>
-                                                            <StopIcon />
-                                                        </IconButton>
-                                                    )
-                                                    : (
-                                                        <IconButton onClick={onRefresh} size='large' color='primary'>
-                                                            <RefreshIcon />
-                                                        </IconButton>
-                                                    )
-                                            }
-                                            <Say {...props}/>
-                                            <IconButton onClick={handleClick} size='large' color='primary'>
-                                                <MoreVertIcon />
-                                            </IconButton>
-                                            <StyledMenu
-                                                MenuListProps={{
-                                                    'aria-labelledby': 'demo-customized-button',
-                                                }}
-                                                anchorEl={anchorEl}
-                                                open={open}
-                                                onClose={handleClose}
-                                                key={msg.id + 'menu'}
-                                            >
-                                                <MenuItem key={msg.id + 'copy'} onClick={() => {
-                                                    props.copyMsg()
-                                                    setAnchorEl(null)
-                                                }} disableRipple>
-                                                    <ContentCopyIcon />
-                                                    {t('copy')}
-                                                </MenuItem>
-
-                                                <MenuItem key={msg.id + 'edit'} onClick={() => {
-                                                    setIsHovering(false)
-                                                    setAnchorEl(null)
-                                                    setIsEditing(true)
-                                                }} disableRipple>
-                                                    <EditIcon />
-                                                    {t('edit')}
-                                                </MenuItem>
-                                                <MenuItem key={msg.id + 'quote'} onClick={() => {
-                                                    setIsHovering(false)
-                                                    setAnchorEl(null)
-                                                    props.quoteMsg()
-                                                }} disableRipple>
-                                                    <FormatQuoteIcon />
-                                                    {t('quote')}
-                                                </MenuItem>
-                                                <Divider sx={{ my: 0.5 }} />
-                                                <MenuItem key={msg.id + 'del'} onClick={() => {
-                                                    setIsEditing(false)
-                                                    setIsHovering(false)
-                                                    setAnchorEl(null)
-                                                    props.delMsg()
-                                                }} disableRipple
-                                                >
-                                                    <DeleteForeverIcon />
-                                                    {t('delete')}
-                                                </MenuItem>
-                                            </StyledMenu>
-                                        </>)
-                                )
-                            }
-                        </Grid>
-                        <Grid item xs>
-                            {
-                                isEditing ? (
-                                    <TextField
-                                        style={{
-                                            width: "auto",
-                                        }}
-                                        multiline
-                                        placeholder="prompt"
-                                        value={msg.content}
-                                        onChange={(e) => { setMsg && setMsg({ ...msg, content: e.target.value }) }}
-                                        id={msg.id + 'input'}
-                                    />
-                                ) : (
-                                    <Box
-                                        sx={{
-                                            wordBreak: 'break-word',
-                                        }}
-                                        dangerouslySetInnerHTML={{ __html: md.render(msg.content) }}
-
-                                    />
-                                )
-                            }
-                            <Typography variant="body2" sx={{ opacity: 0.5 }} >
+                            <Grid item xs={12} sx={{maxHeight: '32px',}}>
                                 {
-                                    tips.join(', ')
+                                    isEditing ? (
+                                        <>
+                                            <IconButton onClick={() => setIsEditing(false)} size='large'
+                                                        color='primary'>
+                                                <CheckIcon/>
+                                            </IconButton>
+                                        </>
+                                    ) : (
+                                        (
+                                            <><IconButton>
+                                                {{
+                                                    assistant: <Avatar><SmartToyIcon/></Avatar>,
+                                                    user: <Avatar><PersonIcon/></Avatar>,
+                                                    system: <Avatar><SettingsIcon/></Avatar>
+                                                }[msg.role]}
+                                            </IconButton>
+                                                <IconButton>
+                                                    <Typography variant="overline" component="div">
+                                                        {t(msg.role)}
+                                                    </Typography>
+                                                </IconButton>
+                                                {
+                                                    mayRendering
+                                                        ? (
+                                                            <IconButton onClick={onStop} size='large' color='primary'>
+                                                                <StopIcon/>
+                                                            </IconButton>
+                                                        )
+                                                        : (
+                                                            <IconButton onClick={onRefresh} size='large' color='primary'>
+                                                                <RefreshIcon/>
+                                                            </IconButton>
+                                                        )
+                                                }
+                                                <Say {...props}/>
+                                                <IconButton onClick={handleClick} size='large' color='primary'>
+                                                    <MoreVertIcon/>
+                                                </IconButton>
+                                                <StyledMenu
+                                                    MenuListProps={{
+                                                        'aria-labelledby': 'demo-customized-button',
+                                                    }}
+                                                    anchorEl={anchorEl}
+                                                    open={open}
+                                                    onClose={handleClose}
+                                                    key={msg.id + 'menu'}
+                                                >
+                                                    <MenuItem key={msg.id + 'copy'} onClick={() => {
+                                                        props.copyMsg()
+                                                        setAnchorEl(null)
+                                                    }} disableRipple>
+                                                        <ContentCopyIcon/>
+                                                        {t('copy')}
+                                                    </MenuItem>
+
+                                                    <MenuItem key={msg.id + 'edit'} onClick={() => {
+                                                        setIsHovering(false)
+                                                        setAnchorEl(null)
+                                                        setIsEditing(true)
+                                                    }} disableRipple>
+                                                        <EditIcon/>
+                                                        {t('edit')}
+                                                    </MenuItem>
+                                                    <MenuItem key={msg.id + 'quote'} onClick={() => {
+                                                        setIsHovering(false)
+                                                        setAnchorEl(null)
+                                                        props.quoteMsg()
+                                                    }} disableRipple>
+                                                        <FormatQuoteIcon/>
+                                                        {t('quote')}
+                                                    </MenuItem>
+                                                    <Divider sx={{my: 0.5}}/>
+                                                    <MenuItem key={msg.id + 'del'} onClick={() => {
+                                                        setIsEditing(false)
+                                                        setIsHovering(false)
+                                                        setAnchorEl(null)
+                                                        props.delMsg()
+                                                    }} disableRipple
+                                                    >
+                                                        <DeleteForeverIcon/>
+                                                        {t('delete')}
+                                                    </MenuItem>
+                                                </StyledMenu>
+                                            </>)
+                                    )
                                 }
-                            </Typography>
-                        </Grid>
+                            </Grid>
+                            <Grid item xs>
+                                {
+                                    isEditing ? (
+                                        <TextField
+                                            style={{
+                                                width: "auto",
+                                            }}
+                                            multiline
+                                            placeholder="prompt"
+                                            value={msg.content}
+                                            onChange={(e) => {
+                                                setMsg && setMsg({...msg, content: e.target.value})
+                                            }}
+                                            id={msg.id + 'input'}
+                                        />
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                wordBreak: 'break-word',
+                                            }}
+                                            dangerouslySetInnerHTML={{__html: md.render(msg.content)}}
+
+                                        />
+                                    )
+                                }
+                                <Typography variant="body2" sx={{opacity: 0.5}}>
+                                    {
+                                        tips.join(', ')
+                                    }
+                                </Typography>
+                            </Grid>
                         </Stack>
                     </Grid>
                 </Grid>
@@ -338,7 +344,7 @@ const StyledMenu = styled((props: MenuProps) => (
         }}
         {...props}
     />
-))(({ theme }) => ({
+))(({theme}) => ({
     '& .MuiPaper-root': {
         borderRadius: 6,
         marginTop: theme.spacing(1),

@@ -27,11 +27,13 @@ import * as api from './api';
 import {ThemeSwitcherProvider} from './theme/ThemeSwitcher';
 import {useTranslation} from "react-i18next";
 import icon from './icon.png'
+import WaitingGif from './Waiting.gif'
 import {handleSay, IsSpeaking} from "./Say";
 
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
+import WaitingSvg from "./waiting.svg";
 import SpeechRecognition, {useSpeechRecognition} from 'react-speech-recognition';
 import {display} from "@mui/system";
 
@@ -325,11 +327,12 @@ function Main() {
                             flexDirection: 'column',
                             justifyContent: 'space-between',
                             overflowX:'hidden'
-                        }}>
+                        }} style={{ overflow:'hidden'}}
+                        >
                             <List
                                 className='scroll'
                                 sx={{
-                                    width: 'auto',
+                                    width: '100%',
                                     bgcolor: 'background.paper',
                                     overflow: 'auto',
                                     '& ul': {padding: 0},
@@ -337,6 +340,7 @@ function Main() {
                                 }}
                                 component="div"
                                 ref={messageListRef}
+                                style={{ overflowX:'hidden'}}
                             >
                                 {
                                     store.currentSession.messages.map((msg, ix, {length}) => {
@@ -369,7 +373,7 @@ function Main() {
                                                                generate(store.currentSession, promptMsgs, msg)
                                                            } else {
                                                                const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
-                                                               const newAssistantMsg = createMessage('assistant', '....')
+                                                               const newAssistantMsg = createMessage('assistant', WaitingSvg.valueOf())
                                                                const newMessages = [...store.currentSession.messages]
                                                                newMessages.splice(ix + 1, 0, newAssistantMsg)
                                                                store.currentSession.messages = newMessages
@@ -400,7 +404,7 @@ function Main() {
 
                 {/*右边内容结束*/}
             </Grid>
-            <BottomNavigation style={{
+            <Grid style={{
                 position:'absolute',
                 width:'100%',
                 bottom:'0px',
@@ -412,7 +416,7 @@ function Main() {
                                   onSubmit={async (newUserMsg: Message, needGenerating = true) => {
                                       if (needGenerating) {
                                           const promptsMsgs = [...store.currentSession.messages, newUserMsg]
-                                          const newAssistantMsg = createMessage('assistant', '....')
+                                          const newAssistantMsg = createMessage('assistant', `&#x2003;![....](${WaitingSvg.valueOf()})`)
                                           store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
                                           store.updateChatSession(store.currentSession)
                                           console.log("newAssistantMsg  " + newAssistantMsg.content)
@@ -427,7 +431,7 @@ function Main() {
                                   }}
                     />
                 </Box>
-            </BottomNavigation>
+            </Grid>
 
             <SettingWindow open={openSettingWindow}
                            settings={store.settings}
