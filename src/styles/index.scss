@@ -23,8 +23,16 @@ html[data-theme='dark'] {
         background-color: #333333;
         border-radius: 6px;
     }
+    .MuiPaper-root{
+        background-color: #212121;
+    }
 
-    ::scrollbar {
+    ::-webkit-scrollbar-corner{
+        background: #212121;
+        background-color: #212121;
+    }
+
+    ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
         background-color: #333333;
@@ -75,8 +83,14 @@ html[data-theme='light'] {
         background-color: #f5f5f5;
         border-radius: 6px;
     }
-
-    ::scrollbar {
+    .MuiPaper-root{
+        background-color: #fafafa;
+    }
+    ::-webkit-scrollbar-corner{
+        background: #f5f5f5;
+        background-color: #f5f5f5;
+    }
+    ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
         background-color: #f5f5f5;

@@ -11,18 +11,23 @@ import {
     Toolbar,
     Typography
 } from "@mui/material";
-import {isMobile} from "react-device-detect";
+import { makeStyles } from '@material-ui/core/styles';
+import Drawer from '@material-ui/core/Drawer';
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsIcon from "@mui/icons-material/Settings";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import React, {useRef} from "react";
+import { useMemo } from 'react';
+
+import {isMobile} from "react-device-detect";
+import React, {useEffect, useRef} from "react";
 import {useTranslation} from "react-i18next";
-import icon from "./icon.png";
-import * as api from "./api";
-import SessionItem from "./SessionItem";
-import {createMessage, createSession, Message, Session, Settings} from "./types";
-import useStore from './store'
+import icon from "../icon.png";
+import * as api from "../api";
+import SessionItem from "../SessionItem";
+import {createMessage, createSession, Message, Session, Settings} from "../types";
+import useStore from '../store'
+import {ThemeSwitcherProvider} from "../theme/ThemeSwitcher";
 
 interface Store {
     chatSessions:Session[]
@@ -43,7 +48,7 @@ interface Props {
     setConfigureChatConfig(configureChatConfig:Session | null):void
 }
 
-export default function LeftSideBar(props: Props) {
+export function LeftSideBar1(props: Props) {
     const {t} = useTranslation()
     const {store}=props;
     const {leftSideBarVisible,setLeftSideBarVisible}=props;
@@ -180,5 +185,56 @@ export default function LeftSideBar(props: Props) {
 
             </Grid>
        </>
+    );
+}
+// const useStyles = makeStyles({
+//     list: {
+//         width: 'auto',
+//     },
+//     fullList: {
+//         width: 'auto',
+//     },
+// });
+export default function LeftSideBar(props: Props){
+    // const classes = useStyles();
+    // const [state, setState] = React.useState(true);
+    const isMounted = useMemo(() => ({ current: true }), []);
+
+    useEffect(() => {
+        if (isMounted ) {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            if (isMounted) {
+                document.body.style.overflow = 'unset';
+            }
+        };
+    }, [isMounted]);
+    const toggleDrawer = (open:boolean) => () => {
+        props.setLeftSideBarVisible(open);
+    };
+
+    const list = () => (
+        <Grid
+            // className={classes.list}
+            // role="presentation"
+            onClick={toggleDrawer(false)}
+            onKeyDown={toggleDrawer(false)}
+        >
+            <LeftSideBar1 {...props}/>
+        </Grid>
+    );
+
+    return (
+        <Grid>
+            <Drawer anchor="left"
+                    open={props.leftSideBarVisible}
+                    // PaperProps={{square: false, style: {backgroundColor:props.store.settings.theme.backgroundColor }}}
+                    onClose={toggleDrawer(false)}
+
+            >
+                {list()}
+            </Drawer>
+        </Grid>
     );
 }

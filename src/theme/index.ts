@@ -22,7 +22,11 @@ export function fetchThemeDesign(mode: RealThemeMode): ThemeOptions {
                 ? {
                 }
                 : {
-                    background: {
+                    "background": {
+                        default: 'rgb(40, 40, 40)',
+                        paper: 'rgb(40, 40, 40)',
+                    },
+                    "background-color": {
                         default: 'rgb(40, 40, 40)',
                         paper: 'rgb(40, 40, 40)',
                     },

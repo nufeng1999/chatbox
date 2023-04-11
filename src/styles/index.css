@@ -70,3 +70,9 @@ html[data-theme='light'] .assistant-msg {
 html[data-theme='dark'] .assistant-msg {
     background-color: #212121;
 }
+.MuiPaper-root[data-theme='light']{
+    background-color: #fafafa;
+}
+.MuiPaper-root[data-theme='dark']{
+    background-color: #212121;
+}

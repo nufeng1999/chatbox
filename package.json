@@ -24,6 +24,8 @@
   },
   "license": "GPL-3.0 license",
   "devDependencies": {
+    "@material-ui/core": "^5.11.16",
+    "@material-ui/styles": "^5.11.16",
     "@types/highlight.js": "^10.1.0",
     "@types/markdown-it": "^12.2.3",
     "@types/markdown-it-link-attributes": "^3.0.1",
@@ -54,8 +56,8 @@
   "dependencies": {
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
-    "@mui/icons-material": "^5.11.11",
-    "@mui/material": "^5.11.11",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.11.16",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -74,7 +76,7 @@
     "localStorage": "^1.0.4",
     "markdown-it": "^13.0.1",
     "markdown-it-link-attributes": "^4.0.1",
-    "material-ui-popup-state": "^5.0.4",
+    "material-ui-popup-state": "^5.11.16",
     "mic-recorder-to-mp3": "^2.2.2",
     "pkg-fetch": "^3.4.2",
     "react": "^18.2.0",
