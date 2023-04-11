@@ -33,6 +33,7 @@ interface Store {
     createEmptyChatSession():void
 }
 interface Props {
+    setRightContentWidth(rightContentWidth:string):void
     store: Store
     leftSideBarVisible:boolean
     setLeftSideBarVisible(leftSideBarVisible:boolean):void

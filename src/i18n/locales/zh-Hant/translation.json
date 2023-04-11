@@ -35,6 +35,8 @@
   "chat": "聊天",
   "new chat": "新聊天",
   "send": "傳送",
+  "[Enter] send, [Shift+Enter] line break": "[Enter] 傳送、[Shift＋Enter] 換行",
+  "[Ctrl+Enter] send without generating": "[Ctrl＋Enter] 傳送但不產生",
   "[Enter] send, [Shift+Enter] line break, [Ctrl+Enter] send without generating": "[Enter] 傳送、[Shift＋Enter] 換行、[Ctrl＋Enter] 傳送但不產生",
   "version": "版本",
   "rename": "改名",

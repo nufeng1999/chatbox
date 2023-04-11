@@ -161,10 +161,10 @@ export function Say(props: Props) {
     const { t } = useTranslation()
     const [isSpeaking, setIsSpeaking] = useState(false)
     const [checked, setChecked] = useState(false);
-    const { msg } = props;
-    const { speech } = props;
+    const { msg,autoSpeedbuffer, speech} = props;
 
     const handleSpeech = (msg:Message,speech:string|null) => {
+        autoSpeedbuffer.length=0;
         const utterance=presay(msg,speech);
         if(utterance === null){
             setIsSpeaking(false);

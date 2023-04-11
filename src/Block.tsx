@@ -75,6 +75,7 @@ export interface Props {
     showModelName: boolean
     modelName: string
     speech:string
+    autoSpeedbuffer:Array<string>
     autoSpeech:boolean
     setMsg: (msg: Message) => void
     delMsg: () => void
@@ -84,7 +85,8 @@ export interface Props {
 }
 function _Block(props: Props) {
     const { t } = useTranslation()
-    const { msg, setMsg } = props;
+    const { msg, setMsg,autoSpeedbuffer } = props;
+
     const [isHovering, setIsHovering] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     // const [isReady] = useState(false);
@@ -290,7 +292,7 @@ function _Block(props: Props) {
                                 isEditing ? (
                                     <TextField
                                         style={{
-                                            width: "100%",
+                                            width: "auto",
                                         }}
                                         multiline
                                         placeholder="prompt"
@@ -370,5 +372,6 @@ export default function Block(props: Props) {
     }, [props.msg,
         props.showWordCount, props.showTokenCount,
         props.showModelName, props.modelName,
-        props.speech, props.autoSpeech])
+        props.autoSpeedbuffer,
+        props.speech, props.autoSpeech,])
 }
