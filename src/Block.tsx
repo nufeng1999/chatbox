@@ -167,10 +167,10 @@ function _Block(props: Props) {
                 msg?.role === OpenAIRoleEnum.Assistant ? 'assistant-msg' : 'user-msg',
             ].join(' ')}
         >
-            <Grid container spacing={2} width='100%'>
+            <Grid container spacing={2} width='100%' style={{marginLeft:'0',marginTop:'0',padding:'0' }}>
                 <Grid item>
                     {
-                        isEditing ? (
+                        isEditing && (
                             <Select
                                 value={msg.role}
                                 onChange={(e: SelectChangeEvent) => {
@@ -189,19 +189,12 @@ function _Block(props: Props) {
                                     <Avatar><SmartToyIcon/></Avatar>
                                 </MenuItem>
                             </Select>
-                        ) : (
-                            <></>
-                            // {
-                            //     assistant: <Avatar><SmartToyIcon /></Avatar>,
-                            //     user: <Avatar><PersonIcon /></Avatar>,
-                            //     system: <Avatar><SettingsIcon /></Avatar>
-                            // }[msg.role]
                         )
                     }
                 </Grid>
-                <Grid item xs={11} sm container>
-                    <Grid item xs container direction="column" spacing={2}>
-                        <Stack spacing={2}>
+                <Grid item xs={12} sm container paddingTop="0" paddingLeft="0">
+                    <Grid item xs container direction="column" marginLeft="0">
+                        <Stack id='Stack' spacing={2}>
                             <Grid item xs={12} sx={{maxHeight: '32px',}}>
                                 {
                                     isEditing ? (
@@ -296,7 +289,7 @@ function _Block(props: Props) {
                                     isEditing ? (
                                         <TextField
                                             style={{
-                                                width: "auto",
+                                                width: "100%",
                                             }}
                                             multiline
                                             placeholder="prompt"
