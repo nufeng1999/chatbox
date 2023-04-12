@@ -1,5 +1,4 @@
 import {
-    Box,
     Divider,
     Grid,
     IconButton, List,
@@ -11,13 +10,14 @@ import {
     Toolbar,
     Typography
 } from "@mui/material";
-import { makeStyles } from '@material-ui/core/styles';
+import Box from '@mui/material/Box';
+import {makeStyles} from '@material-ui/core/styles';
 import Drawer from '@material-ui/core/Drawer';
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import AddIcon from "@mui/icons-material/Add";
 import SettingsIcon from "@mui/icons-material/Settings";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
-import { useMemo } from 'react';
+import {useMemo} from 'react';
 
 import {isMobile} from "react-device-detect";
 import React, {useEffect, useRef} from "react";
@@ -28,32 +28,44 @@ import SessionItem from "../SessionItem";
 import {createMessage, createSession, Message, Session, Settings} from "../types";
 import useStore from '../store'
 import {ThemeSwitcherProvider} from "../theme/ThemeSwitcher";
+import {openai as openaiIcon} from "../iconLib";
 
 interface Store {
-    chatSessions:Session[]
-    currentSession:Session
-    switchCurrentSession(session:Session):void
-    deleteChatSession(session:Session):void
-    createChatSession(newSession:Session, ix?: number):void
-    createEmptyChatSession():void
+    chatSessions: Session[]
+    currentSession: Session
+
+    switchCurrentSession(session: Session): void
+
+    deleteChatSession(session: Session): void
+
+    createChatSession(newSession: Session, ix?: number): void
+
+    createEmptyChatSession(): void
 }
+
 interface Props {
-    setRightContentWidth(rightContentWidth:string):void
+    setRightContentWidth(rightContentWidth: string): void
+
     store: Store
-    leftSideBarVisible:boolean
-    setLeftSideBarVisible(leftSideBarVisible:boolean):void
-    openSettingWindow:boolean
-    setOpenSettingWindow(openSettingWindow:boolean):void
-    configureChatConfig:Session | null
-    setConfigureChatConfig(configureChatConfig:Session | null):void
+    leftSideBarVisible: boolean
+
+    setLeftSideBarVisible(leftSideBarVisible: boolean): void
+
+    openSettingWindow: boolean
+
+    setOpenSettingWindow(openSettingWindow: boolean): void
+
+    configureChatConfig: Session | null
+
+    setConfigureChatConfig(configureChatConfig: Session | null): void
 }
 
 export function LeftSideBar1(props: Props) {
     const {t} = useTranslation()
-    const {store}=props;
-    const {leftSideBarVisible,setLeftSideBarVisible}=props;
+    const {store} = props;
+    const {leftSideBarVisible, setLeftSideBarVisible} = props;
     const {openSettingWindow, setOpenSettingWindow} = props;
-    const {configureChatConfig, setConfigureChatConfig}= props;
+    const {configureChatConfig, setConfigureChatConfig} = props;
     // const store = useStore()
     const messageListRef = useRef<HTMLDivElement>(null)
 
@@ -79,12 +91,9 @@ export function LeftSideBar1(props: Props) {
                         alignItems: "center",
                         justifyContent: 'space-between'
                     }}>
-                        <img src={icon} style={{
-                            width: '18px',
-                            height: '18px',
-                            marginRight: '0px',
-                        }} title="Chatbox"/>
-
+                        <Box
+                            dangerouslySetInnerHTML={{__html:openaiIcon}}
+                        />
                     </Toolbar>
                     {
                         (isMobile) ? (<></>) : (
@@ -184,9 +193,10 @@ export function LeftSideBar1(props: Props) {
                 </Stack>
 
             </Grid>
-       </>
+        </>
     );
 }
+
 // const useStyles = makeStyles({
 //     list: {
 //         width: 'auto',
@@ -195,13 +205,13 @@ export function LeftSideBar1(props: Props) {
 //         width: 'auto',
 //     },
 // });
-export default function LeftSideBar(props: Props){
+export default function LeftSideBar(props: Props) {
     // const classes = useStyles();
     // const [state, setState] = React.useState(true);
-    const isMounted = useMemo(() => ({ current: true }), []);
+    const isMounted = useMemo(() => ({current: true}), []);
 
     useEffect(() => {
-        if (isMounted ) {
+        if (isMounted) {
             document.body.style.overflow = 'hidden';
         }
         return () => {
@@ -210,7 +220,7 @@ export default function LeftSideBar(props: Props){
             }
         };
     }, [isMounted]);
-    const toggleDrawer = (open:boolean) => () => {
+    const toggleDrawer = (open: boolean) => () => {
         props.setLeftSideBarVisible(open);
     };
 
@@ -229,7 +239,7 @@ export default function LeftSideBar(props: Props){
         <Grid>
             <Drawer anchor="left"
                     open={props.leftSideBarVisible}
-                    // PaperProps={{square: false, style: {backgroundColor:props.store.settings.theme.backgroundColor }}}
+                // PaperProps={{square: false, style: {backgroundColor:props.store.settings.theme.backgroundColor }}}
                     onClose={toggleDrawer(false)}
 
             >

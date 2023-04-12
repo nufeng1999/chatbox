@@ -3,6 +3,7 @@ import { ThemeMode } from './theme';
 
 export type Message = OpenAIMessage & {
     id: string;
+    format:string;
     cancel?: () => void;
 }
 
@@ -15,9 +16,11 @@ export interface Session{
 
 export function createMessage(
     role: OpenAIRoleEnumType = OpenAIRoleEnum.User,
-    content: string = ''): Message {
+    content: string = '',
+    format: string='markdown'): Message {
     return {
         id: uuidv4(),
+        format:format,
         content: content,
         role: role,
     }

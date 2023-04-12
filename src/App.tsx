@@ -12,7 +12,7 @@ import {
     TextField,AppBar
 } from '@mui/material';
 import {isMobile} from "react-device-detect";
-import {Session, createSession, Message, createMessage, Settings} from './types'
+import {Session, createSession, Message, createMessage, Settings, OpenAIRoleEnum} from './types'
 import useStore from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
@@ -33,7 +33,7 @@ import {handleSay, IsSpeaking} from "./Say";
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
-import WaitingSvg from "./waiting.svg";
+import iconLib from "./iconLib";
 import SpeechRecognition, {useSpeechRecognition} from 'react-speech-recognition';
 import {display} from "@mui/system";
 
@@ -57,7 +57,7 @@ function Main() {
         }
     }
     if (isMobile) {
-        toggleFullScreen()
+        //toggleFullScreen()
     }
     const autoSpeed = () => {
 
@@ -373,7 +373,11 @@ function Main() {
                                                                generate(store.currentSession, promptMsgs, msg)
                                                            } else {
                                                                const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
-                                                               const newAssistantMsg = createMessage('assistant', WaitingSvg.valueOf())
+
+                                                               const newAssistantMsg = createMessage(
+                                                                   OpenAIRoleEnum.Assistant,
+                                                                   `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                                                   'html');
                                                                const newMessages = [...store.currentSession.messages]
                                                                newMessages.splice(ix + 1, 0, newAssistantMsg)
                                                                store.currentSession.messages = newMessages
@@ -416,7 +420,10 @@ function Main() {
                                   onSubmit={async (newUserMsg: Message, needGenerating = true) => {
                                       if (needGenerating) {
                                           const promptsMsgs = [...store.currentSession.messages, newUserMsg]
-                                          const newAssistantMsg = createMessage('assistant', `&#x2003;![....](${WaitingSvg.valueOf()})`)
+                                          const newAssistantMsg = createMessage(
+                                              OpenAIRoleEnum.Assistant,
+                                              `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                              'html');
                                           store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
                                           store.updateChatSession(store.currentSession)
                                           console.log("newAssistantMsg  " + newAssistantMsg.content)

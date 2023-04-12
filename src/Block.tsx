@@ -30,7 +30,7 @@ import mila from 'markdown-it-link-attributes';
 import {useTranslation, getI18n} from 'react-i18next';
 import {Message, OpenAIRoleEnum, OpenAIRoleEnumType} from './types';
 import {Say, handleSay} from "./Say";
-import waitingsvg from "./waiting.svg";
+import waitingsvg from "./iconLib";
 // copy button html content
 // join at markdown-it parsed
 const getCodeCopyButtonHTML = () => {
@@ -311,7 +311,7 @@ function _Block(props: Props) {
                                             sx={{
                                                 wordBreak: 'break-word',
                                             }}
-                                            dangerouslySetInnerHTML={{__html: md.render(msg.content)}}
+                                            dangerouslySetInnerHTML={{__html:msg.format==='html'?msg.content:md.render(msg.content)}}
 
                                         />
                                     )
