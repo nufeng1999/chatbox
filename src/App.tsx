@@ -1,7 +1,17 @@
-import React, {DOMElement, useRef} from 'react';
-import Block from './Block'
+import React, {DOMElement, useMemo, useRef} from 'react';
+import Block, {Props} from './Block'
 import * as client from './client'
 import SessionItem from './SessionItem'
+import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
+import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
+
+import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
+import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
+
+import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
+import MicOffOutlinedIcon from '@mui/icons-material/MicOffOutlined';
+
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import {BottomNavigation, BottomNavigationAction, SvgIconTypeMap} from '@mui/material';
@@ -9,7 +19,7 @@ import {
     Toolbar, Box, Badge, Snackbar,
     List, ListSubheader, ListItemText, MenuList,
     IconButton, Button, Stack, Grid, MenuItem, ListItemIcon, Typography, Divider,
-    TextField,AppBar
+    TextField, AppBar
 } from '@mui/material';
 import {isMobile} from "react-device-detect";
 import {Session, createSession, Message, createMessage, Settings, OpenAIRoleEnum} from './types'
@@ -28,7 +38,7 @@ import {ThemeSwitcherProvider} from './theme/ThemeSwitcher';
 import {useTranslation} from "react-i18next";
 import icon from './icon.png'
 import WaitingGif from './Waiting.gif'
-import {handleSay, IsSpeaking} from "./Say";
+import {pushToAutoSpeedBuffer,Say} from "./Say";
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
@@ -46,14 +56,14 @@ function Main() {
     const {t} = useTranslation()
     const store = useStore()
     const [leftSideBarVisible, setLeftSideBarVisible] = React.useState(true);
-
+    const [isScrolling, setIsScrolling] = React.useState(false)
+    const [isPlaying, setIsPlaying] = React.useState(false)
     // 是否展示设置窗口
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
     let isReady = false;
-    let autoSpeedBuffer: Array<string> = new Array<string>();
 
-    const assistantIconMap={SmartToyIcon,Face4TwoToneIcon,Face5TwoToneIcon}
-    const getAssistantIcon=(iconName:string)=>{
+    const assistantIconMap = {SmartToyIcon, Face4TwoToneIcon, Face5TwoToneIcon}
+    const getAssistantIcon = (iconName: string) => {
         // let DynamicComponent=null;
         // if(msg.role=='assistant') {
         //     if(props.assistantIcon==null)
@@ -76,15 +86,12 @@ function Main() {
     if (isMobile) {
         //toggleFullScreen()
     }
-    const autoSpeed = () => {
 
-        if ((!IsSpeaking())
-            && autoSpeedBuffer.length > 0
-            && store.settings.autoSpeech)
-            handleSay(autoSpeedBuffer.shift() as string, store.settings.speech);
-        window.requestAnimationFrame(autoSpeed)
+    const speechControl = () => {
+        setIsPlaying(!isPlaying);
+
     }
-    window.requestAnimationFrame(autoSpeed)
+
     useEffect(() => {
         if (store.needSetting) {
             setOpenSettingWindow(true)
@@ -223,7 +230,7 @@ function Main() {
                     if (session.messages[i].id === targetMsg.id) {
                         session.messages[i] = {
                             ...session.messages[i],
-                            format:"makrdown",
+                            format: "makrdown",
                             content: text,
                             cancel,
                         }
@@ -233,7 +240,7 @@ function Main() {
                         let match = regex.exec(text);
                         if (match != null && match.index > frPos) {
                             let substr = text.substring(frPos, match.index + 1)
-                            autoSpeedBuffer.push(substr)
+                            pushToAutoSpeedBuffer(substr)
                             frPos = match.index + 1
                         }
                         break;
@@ -271,7 +278,10 @@ function Main() {
         }
     }
 
+    const scrollControl = () => {
+        setIsScrolling(!isScrolling);
 
+    }
     return (
         <Box sx={{height: '100vh'}}>
             <LeftSideBar setRightContentWidth={setRightContentWidth}
@@ -326,136 +336,141 @@ function Main() {
             </AppBar>
             <Grid item xs={12} sx={{
                 flexWrap: 'nowrap',
-                height:'auto',
-                width: rightContentWidth }}
-                  style={{ position:'absolute',
-                      width:'100%',
-                      height:'auto',
-                      top:'50px',
-                      bottom:'125px'}}>
+                height: 'auto',
+                width: rightContentWidth
+            }}
+                  style={{
+                      position: 'absolute',
+                      width: '100%',
+                      height: 'auto',
+                      top: '50px',
+                      bottom: '125px'
+                  }}>
                 {/*右边内容*/}
 
-                        <Stack sx={{
-                            overflow:'scroll',
-                            position:'absolute',
-                            height: '100%',
-                            width:'100%',
-                            padding: '0px 0',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            justifyContent: 'space-between',
-                            overflowX:'hidden'
-                        }} style={{ overflow:'hidden'}}
-                        >
-                            <List
-                                className='scroll'
-                                sx={{
-                                    width: '100%',
-                                    bgcolor: 'background.paper',
-                                    overflow: 'auto',
-                                    '& ul': {padding: 0},
-                                    flexGrow: 2,
-                                }}
-                                component="div"
-                                ref={messageListRef}
-                                style={{ overflowX:'hidden'}}
-                            >
-                                {
-                                    store.currentSession.messages.map((msg, ix, {length}) => {
-                                            return (
-                                                <Block id={msg.id} key={msg.id} msg={msg}
-                                                       isReady={isReady}
-                                                       getAssistantIcon={getAssistantIcon}
-                                                       autoSpeedBuffer={autoSpeedBuffer}
-                                                       showWordCount={store.settings.showWordCount || false}
-                                                       showTokenCount={store.settings.showTokenCount || false}
-                                                       showModelName={store.settings.showModelName || false}
-                                                       assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
-                                                       speech={store.settings.speech || ''}
-                                                       autoSpeech={store.settings.autoSpeech || false}
-                                                       modelName={store.currentSession.model}
-                                                       setMsg={(updated) => {
-                                                           store.currentSession.messages = store.currentSession.messages.map((m) => {
-                                                               if (m.id === updated.id) {
-                                                                   return updated
-                                                               }
-                                                               return m
-                                                           })
-                                                           store.updateChatSession(store.currentSession)
-                                                       }}
-                                                       delMsg={() => {
-                                                           store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
-                                                           store.updateChatSession(store.currentSession)
-                                                       }}
-                                                       refreshMsg={() => {
-                                                           if (msg.role === 'assistant') {
-                                                               const promptMsgs = store.currentSession.messages.slice(0, ix)
-                                                               generate(store.currentSession, promptMsgs, msg)
-                                                           } else {
-                                                               const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
+                <Stack sx={{
+                    overflow: 'scroll',
+                    position: 'absolute',
+                    height: '100%',
+                    width: '100%',
+                    padding: '0px 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    overflowX: 'hidden'
+                }} style={{overflow: 'hidden'}}
+                >
+                    <List
+                        className='scroll'
+                        sx={{
+                            width: '100%',
+                            bgcolor: 'background.paper',
+                            overflow: 'auto',
+                            '& ul': {padding: 0},
+                            flexGrow: 2,
+                        }}
+                        component="div"
+                        ref={messageListRef}
+                        style={{overflowX: 'hidden'}}
+                    >
+                        {
+                            store.currentSession.messages.map((msg, ix, {length}) => {
+                                    return (
+                                        <Block id={msg.id} key={msg.id} msg={msg}
+                                               isReady={isReady}
+                                               getAssistantIcon={getAssistantIcon}
+                                               showWordCount={store.settings.showWordCount || false}
+                                               showTokenCount={store.settings.showTokenCount || false}
+                                               showModelName={store.settings.showModelName || false}
+                                               assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
+                                               speech={store.settings.speech || ''}
+                                               autoSpeech={store.settings.autoSpeech || false}
+                                               modelName={store.currentSession.model}
+                                               setMsg={(updated) => {
+                                                   store.currentSession.messages = store.currentSession.messages.map((m) => {
+                                                       if (m.id === updated.id) {
+                                                           return updated
+                                                       }
+                                                       return m
+                                                   })
+                                                   store.updateChatSession(store.currentSession)
+                                               }}
+                                               delMsg={() => {
+                                                   store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
+                                                   store.updateChatSession(store.currentSession)
+                                               }}
+                                               refreshMsg={() => {
+                                                   if (msg.role === 'assistant') {
+                                                       const promptMsgs = store.currentSession.messages.slice(0, ix)
+                                                       generate(store.currentSession, promptMsgs, msg)
+                                                   } else {
+                                                       const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
 
-                                                               const newAssistantMsg = createMessage(
-                                                                   OpenAIRoleEnum.Assistant,
-                                                                   `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
-                                                                   'html');
-                                                               const newMessages = [...store.currentSession.messages]
-                                                               newMessages.splice(ix + 1, 0, newAssistantMsg)
-                                                               store.currentSession.messages = newMessages
-                                                               store.updateChatSession(store.currentSession)
-                                                               generate(store.currentSession, promptsMsgs, newAssistantMsg)
-                                                               messageScrollRef.current = {
-                                                                   msgId: newAssistantMsg.id,
-                                                                   smooth: true
-                                                               }
-                                                           }
-                                                       }}
-                                                       copyMsg={() => {
-                                                           navigator.clipboard.writeText(msg.content)
-                                                           store.addToast(t('copied to clipboard'))
-                                                       }}
-                                                       quoteMsg={() => {
-                                                           let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
-                                                           input += '\n\n-------------------\n\n'
-                                                           setMessageInput(input)
-                                                       }}
-                                                />
-                                            )
-                                        }
+                                                       const newAssistantMsg = createMessage(
+                                                           OpenAIRoleEnum.Assistant,
+                                                           `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                                           'html');
+                                                       const newMessages = [...store.currentSession.messages]
+                                                       newMessages.splice(ix + 1, 0, newAssistantMsg)
+                                                       store.currentSession.messages = newMessages
+                                                       store.updateChatSession(store.currentSession)
+                                                       generate(store.currentSession, promptsMsgs, newAssistantMsg)
+                                                       messageScrollRef.current = {
+                                                           msgId: newAssistantMsg.id,
+                                                           smooth: true
+                                                       }
+                                                   }
+                                               }}
+                                               copyMsg={() => {
+                                                   navigator.clipboard.writeText(msg.content)
+                                                   store.addToast(t('copied to clipboard'))
+                                               }}
+                                               quoteMsg={() => {
+                                                   let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
+                                                   input += '\n\n-------------------\n\n'
+                                                   setMessageInput(input)
+                                               }}
+                                        />
                                     )
                                 }
-                            </List>
-                        </Stack>
+                            )
+                        }
+                    </List>
+                </Stack>
 
                 {/*右边内容结束*/}
             </Grid>
             <Grid style={{
-                position:'absolute',
-                width:'100%',
-                bottom:'0px',
-                height:'120px'}}>
-                <Box sx={{padding: '20px 0', width:'99%',height: 'auto'}}>
-                    <MessageInput settings={store.settings}
-                                  // messageInput="messageInput"
-                                  setMessageInput={setMessageInput}
-                                  onSubmit={async (newUserMsg: Message, needGenerating = true) => {
-                                      if (needGenerating) {
-                                          const promptsMsgs = [...store.currentSession.messages, newUserMsg]
-                                          const newAssistantMsg = createMessage(
-                                              OpenAIRoleEnum.Assistant,
-                                              `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
-                                              'html');
-                                          store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
-                                          store.updateChatSession(store.currentSession)
-                                          console.log("newAssistantMsg  " + newAssistantMsg.content)
-                                          generate(store.currentSession, promptsMsgs, newAssistantMsg)
-                                          // if (store.settings.autoSpeech) handleSay(newAssistantMsg,store.settings.speech);
-                                          messageScrollRef.current = {msgId: newAssistantMsg.id, smooth: true}
-                                      } else {
-                                          store.currentSession.messages = [...store.currentSession.messages, newUserMsg]
-                                          store.updateChatSession(store.currentSession)
-                                          messageScrollRef.current = {msgId: newUserMsg.id, smooth: true}
-                                      }
-                                  }}
+                position: 'absolute',
+                width: '100%',
+                bottom: '0px',
+                height: '120px'
+            }}>
+                <Box sx={{padding: '20px 0', width: '99%', height: 'auto'}}>
+                    <MessageInput
+                        isScrolling={isScrolling}
+                        scrollControl={scrollControl}
+                        settings={store.settings}
+                        setMessageInput={setMessageInput}
+                        onSubmit={async (newUserMsg: Message, needGenerating = true) => {
+                            if (needGenerating) {
+                                const promptsMsgs = [...store.currentSession.messages, newUserMsg]
+                                const newAssistantMsg = createMessage(
+                                    OpenAIRoleEnum.Assistant,
+                                    `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                    'html');
+                                store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
+                                store.updateChatSession(store.currentSession)
+                                // console.log("newAssistantMsg  " + newAssistantMsg.content)
+                                generate(store.currentSession, promptsMsgs, newAssistantMsg)
+                                // if (store.settings.autoSpeech) handleSay(newAssistantMsg,store.settings.speech);
+                                messageScrollRef.current = {msgId: newAssistantMsg.id, smooth: true}
+                            } else {
+                                store.currentSession.messages = [...store.currentSession.messages, newUserMsg]
+                                store.updateChatSession(store.currentSession)
+                                messageScrollRef.current = {msgId: newUserMsg.id, smooth: true}
+                            }
+                        }}
                     />
                 </Box>
             </Grid>
@@ -516,9 +531,10 @@ interface RecognitionEvent {
 }
 
 function MessageInput(props: {
-    settings: Settings
+    isScrolling: boolean
+    scrollControl(): void
+    settings:Settings
     onSubmit: (newMsg: Message, needGenerating?: boolean) => void
-    // messageInput: string
     setMessageInput: (value: string) => void
 }) {
     const {
@@ -528,6 +544,8 @@ function MessageInput(props: {
         browserSupportsSpeechRecognition
     } = useSpeechRecognition();
     const [isTalking, setIsTalking] = React.useState(false)
+
+
     const {t} = useTranslation()
     // const {setMessageInput} = props
     const [nmessageInput, setNmessageInput] = React.useState("")
@@ -575,52 +593,52 @@ function MessageInput(props: {
             <Grid container>
                 <Grid item xs={12}>{
                     isTalking ? (
-                        <TextField
-                            multiline
-                            id="isTalking"
-                            label="Prompt"
-                            value={transcript}
-                            // onChange={(event) => setMessageInput(event.target.value)}
-                            fullWidth
-                            maxRows={12}
-                            autoFocus
-                            // id='message-input'
-                            onKeyDown={(event) => {
-                                if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                    event.preventDefault()
-                                    submit()
-                                    return
-                                }
-                                if (event.keyCode === 13 && event.ctrlKey) {
-                                    event.preventDefault()
-                                    submit(false)
-                                    return
-                                }
-                            }}
-                        />) :
+                            <TextField
+                                multiline
+                                id="isTalking"
+                                label="Prompt"
+                                value={transcript}
+                                // onChange={(event) => setMessageInput(event.target.value)}
+                                fullWidth
+                                maxRows={12}
+                                autoFocus
+                                // id='message-input'
+                                onKeyDown={(event) => {
+                                    if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                                        event.preventDefault()
+                                        submit()
+                                        return
+                                    }
+                                    if (event.keyCode === 13 && event.ctrlKey) {
+                                        event.preventDefault()
+                                        submit(false)
+                                        return
+                                    }
+                                }}
+                            />) :
                         (
-                        <TextField
-                            multiline
-                            label="Prompt"
-                            value={nmessageInput}
-                            onChange={(event) => setNmessageInput(event.target.value)}
-                            fullWidth
-                            maxRows={12}
-                            autoFocus
-                            id='message-input'
-                            onKeyDown={(event) => {
-                                if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                    event.preventDefault()
-                                    submit()
-                                    return
-                                }
-                                if (event.keyCode === 13 && event.ctrlKey) {
-                                    event.preventDefault()
-                                    submit(false)
-                                    return
-                                }
-                            }}
-                        />)
+                            <TextField
+                                multiline
+                                label="Prompt"
+                                value={nmessageInput}
+                                onChange={(event) => setNmessageInput(event.target.value)}
+                                fullWidth
+                                maxRows={12}
+                                autoFocus
+                                id='message-input'
+                                onKeyDown={(event) => {
+                                    if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                                        event.preventDefault()
+                                        submit()
+                                        return
+                                    }
+                                    if (event.keyCode === 13 && event.ctrlKey) {
+                                        event.preventDefault()
+                                        submit(false)
+                                        return
+                                    }
+                                }}
+                            />)
                 }
                 </Grid>
                 <Grid container style={{justifyContent: "right"}}>
@@ -631,32 +649,36 @@ function MessageInput(props: {
                                     style={{opacity: 0.3}}>{t('[Ctrl+Enter] send without generating')}</Typography>
                     </Grid>
                     <Grid item xs={6} style={{justifyContent: "right", display: 'flex'}}>
-                        <Button variant="contained" size='small' disabled={!isTalking && listening}
-                                onClick={talking}
-                                style={{
-                                    fontSize: '16px',
-                                    justifySelf: 'right',
-                                    marginRight: '5px',
-                                    paddingTop: '5px',
-                                    paddingRight: '5px',
-                                    paddingBottom: '5px',
-                                    paddingLeft: '5px'
-                                }}>
-                            <img src={listening ? MicOffIcon : MicOnIcon}
-                                 style={{maxWidth: '28px', maxHeight: '28px'}}
-                                 alt={listening ? "MicOff" : "MicOn"}/>
-                        </Button>
-                        <Button type='submit' variant="contained" size='small'
-                                style={{
-                                    fontSize: '16px',
-                                    justifySelf: 'right',
-                                    paddingTop: '6px',
-                                    paddingRight: '5px',
-                                    paddingBottom: '6px',
-                                    paddingLeft: '5px'
-                                }}>
-                            {t('send')}
-                        </Button>
+                        <IconButton size='large' color='primary' disabled={!isTalking && listening}
+                                    onClick={props.scrollControl}>
+                            {
+                                props.isScrolling ? (
+                                    <StopCircleOutlinedIcon/>
+                                ) : (
+                                    <RestartAltOutlinedIcon/>
+                                )
+                            }
+                        </IconButton>
+                        {
+                        props.settings.autoSpeech &&(
+                        <Say unitType='A'
+                             msg={null}
+                             autoSpeech={props.settings.autoSpeech}
+                             speech={props.settings.speech} />)
+                        }
+                        <IconButton size='large' color='primary' disabled={!isTalking && listening}
+                                    onClick={talking}>
+                            {
+                                listening ? (
+                                    <MicOffOutlinedIcon/>
+                                ) : (
+                                    <MicNoneOutlinedIcon/>
+                                )
+                            }
+                        </IconButton>
+                        <IconButton size='large' color='primary' type='submit'>
+                            <SendOutlinedIcon/>
+                        </IconButton>
                     </Grid>
                 </Grid>
             </Grid>
@@ -664,7 +686,6 @@ function MessageInput(props: {
         </form>
     )
 }
-
 export default function App() {
     return (
         <ThemeSwitcherProvider>

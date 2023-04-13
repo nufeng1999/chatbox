@@ -29,7 +29,7 @@ import 'github-markdown-css/github-markdown-light.css'
 import mila from 'markdown-it-link-attributes';
 import {useTranslation, getI18n} from 'react-i18next';
 import {Message, OpenAIRoleEnum, OpenAIRoleEnumType} from './types';
-import {Say, handleSay} from "./Say";
+import {Say} from "./Say";
 import waitingsvg from "./iconLib";
 import {OverridableComponent} from "@mui/types";
 // copy button html content
@@ -80,7 +80,6 @@ export interface Props {
     assistantIcon: string
     getAssistantIcon:(iconName:string) => OverridableComponent<SvgIconTypeMap<{}, "svg">> & {muiName: string}
     speech: string
-    autoSpeedBuffer: Array<string>
     autoSpeech: boolean
     setMsg: (msg: Message) => void
     delMsg: () => void
@@ -91,7 +90,7 @@ export interface Props {
 
 function _Block(props: Props) {
     const {t} = useTranslation()
-    const {msg, setMsg, autoSpeedBuffer,getAssistantIcon} = props;
+    const {msg, setMsg, getAssistantIcon} = props;
 
     const [isHovering, setIsHovering] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -247,7 +246,7 @@ function _Block(props: Props) {
                                                                 </IconButton>
                                                             )
                                                     }
-                                                    <Say {...props}/>
+                                                    <Say unitType='B' {...props} />
                                                     <IconButton onClick={handleClick} size='large' color='primary'>
                                                         <MoreVertIcon/>
                                                     </IconButton>
@@ -388,6 +387,5 @@ export default function Block(props: Props) {
     }, [props.msg,
         props.showWordCount, props.showTokenCount,
         props.showModelName, props.modelName,
-        props.autoSpeedBuffer,
         props.speech, props.autoSpeech,])
 }
