@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 export function getDefaultSettings(): Settings {
     return {
         openaiKey: '',
+        assistantIcon: 'SmartToyIcon',
         speech: '',
         autoSpeech: false,
         apiHost: 'https://api.openai.com',

@@ -37,6 +37,7 @@ export function createSession(modelName: string, name: string = "Untitled"): Ses
 
 export interface Settings {
     openaiKey: string
+    assistantIcon: string
     speech: string
     autoSpeech?: boolean
     apiHost: string

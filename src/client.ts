@@ -57,6 +57,7 @@ export async function replay(
 
     let fullText = '';
     try {
+
         const messages = prompts.map(msg => ({ role: msg.role, content: msg.content }))
         const response = await fetch(`${host}/v1/chat/completions`, {
             method: 'POST',

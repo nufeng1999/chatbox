@@ -53,6 +53,8 @@
   "user": "用户",
   "system": "系统",
   "assistant": "助手",
+  "women": "女助手",
+  "men": "男助手",
   "Prompt": "Prompt",
   "copied to clipboard": "已复制到剪贴板",
   "language": "语言",

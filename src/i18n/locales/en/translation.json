@@ -54,6 +54,8 @@
   "user": "User",
   "system": "System",
   "assistant": "Assistant",
+  "women": "Women",
+  "men": "Men",
   "Prompt": "Prompt",
   "copied to clipboard": "Copied to clipboard",
   "language": "Language",

@@ -1,10 +1,10 @@
-import React, {useRef} from 'react';
+import React, {DOMElement, useRef} from 'react';
 import Block from './Block'
 import * as client from './client'
 import SessionItem from './SessionItem'
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import { BottomNavigation, BottomNavigationAction } from '@mui/material';
+import {BottomNavigation, BottomNavigationAction, SvgIconTypeMap} from '@mui/material';
 import {
     Toolbar, Box, Badge, Snackbar,
     List, ListSubheader, ListItemText, MenuList,
@@ -29,24 +29,41 @@ import {useTranslation} from "react-i18next";
 import icon from './icon.png'
 import WaitingGif from './Waiting.gif'
 import {handleSay, IsSpeaking} from "./Say";
-
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
 import iconLib from "./iconLib";
 import SpeechRecognition, {useSpeechRecognition} from 'react-speech-recognition';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import Face4TwoToneIcon from '@mui/icons-material/Face4TwoTone';
+import Face5TwoToneIcon from '@mui/icons-material/Face5TwoTone';
 import {display} from "@mui/system";
+import {OverridableComponent} from "@mui/types";
 
 const {useEffect, useState} = React
 
 function Main() {
     const {t} = useTranslation()
     const store = useStore()
-    const [leftSideBarVisible, setLeftSideBarVisible] = React.useState(true)
+    const [leftSideBarVisible, setLeftSideBarVisible] = React.useState(true);
+
     // 是否展示设置窗口
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
     let isReady = false;
-    let autoSpeedbuffer: Array<string> = new Array<string>();
+    let autoSpeedBuffer: Array<string> = new Array<string>();
+
+    const assistantIconMap={SmartToyIcon,Face4TwoToneIcon,Face5TwoToneIcon}
+    const getAssistantIcon=(iconName:string)=>{
+        // let DynamicComponent=null;
+        // if(msg.role=='assistant') {
+        //     if(props.assistantIcon==null)
+        //         props.assistantIcon='SmartToyIcon'
+        //     const componentType = props.assistantIcon;
+        //     DynamicComponent = React.createElement(componentType);
+        // }
+        const assistantIconMapElement = assistantIconMap[iconName as keyof typeof assistantIconMap];
+        return assistantIconMapElement;
+    }
     const toggleFullScreen = () => {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen();
@@ -62,9 +79,9 @@ function Main() {
     const autoSpeed = () => {
 
         if ((!IsSpeaking())
-            && autoSpeedbuffer.length > 0
+            && autoSpeedBuffer.length > 0
             && store.settings.autoSpeech)
-            handleSay(autoSpeedbuffer.shift() as string, store.settings.speech);
+            handleSay(autoSpeedBuffer.shift() as string, store.settings.speech);
         window.requestAnimationFrame(autoSpeed)
     }
     window.requestAnimationFrame(autoSpeed)
@@ -206,6 +223,7 @@ function Main() {
                     if (session.messages[i].id === targetMsg.id) {
                         session.messages[i] = {
                             ...session.messages[i],
+                            format:"makrdown",
                             content: text,
                             cancel,
                         }
@@ -215,7 +233,7 @@ function Main() {
                         let match = regex.exec(text);
                         if (match != null && match.index > frPos) {
                             let substr = text.substring(frPos, match.index + 1)
-                            autoSpeedbuffer.push(substr)
+                            autoSpeedBuffer.push(substr)
                             frPos = match.index + 1
                         }
                         break;
@@ -347,10 +365,12 @@ function Main() {
                                             return (
                                                 <Block id={msg.id} key={msg.id} msg={msg}
                                                        isReady={isReady}
-                                                       autoSpeedbuffer={autoSpeedbuffer}
+                                                       getAssistantIcon={getAssistantIcon}
+                                                       autoSpeedBuffer={autoSpeedBuffer}
                                                        showWordCount={store.settings.showWordCount || false}
                                                        showTokenCount={store.settings.showTokenCount || false}
                                                        showModelName={store.settings.showModelName || false}
+                                                       assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
                                                        speech={store.settings.speech || ''}
                                                        autoSpeech={store.settings.autoSpeech || false}
                                                        modelName={store.currentSession.model}
