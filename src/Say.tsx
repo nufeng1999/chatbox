@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Message} from "@/src/types";
 import {Props} from "@/src/Block";
 import {IconButton, Checkbox} from "@mui/material";
@@ -9,6 +9,7 @@ import {useTranslation} from "react-i18next";
 import {bool} from "prop-types";
 import PauseCircleOutlineOutlinedIcon from "@mui/icons-material/PauseCircleOutlineOutlined";
 import PlayCircleFilledWhiteOutlinedIcon from "@mui/icons-material/PlayCircleFilledWhiteOutlined";
+import {booleanLiteral} from "@babel/types";
 // import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
 // import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
 
@@ -25,59 +26,17 @@ const synth = window.speechSynthesis;
 let autoSpeedBuffer: Array<string> = new Array<string>();
 let autoSpeedNumber: number = 0
 let isRecording: boolean = false;
-
-const SpeechControlUnitA = (props: {
-    isSpeaking: boolean,
-    speechControl(): void
-}) => {
-    return (
-        <IconButton size='large' color='primary' onClick={props.speechControl}>
-            {
-                props.isSpeaking ? (
-                    <PauseCircleOutlineOutlinedIcon/>
-                ) : (
-                    <PlayCircleFilledWhiteOutlinedIcon/>
-                )
-            }
-        </IconButton>
-    )
-}
-const SpeechControlUnitB = (props: {
-    isSpeaking: boolean
-    msg: Message | null,
-    speech: string,
-    autoSpeech?: boolean,
-    checked?: boolean,
-    handleSpeech(msg: Message | null, speech: string): void,
-    setChecked(checked: boolean): void,
-}) => {
-    const {t} = useTranslation()
-    return (
-        props.isSpeaking
-            ? (
-                <IconButton onClick={() => {
-                    (props.msg != null) && props.handleSpeech(props.msg, props.speech)
-                }} size='large' color='primary'>
-                    <VoiceOverOffIcon fontSize='small'/>
-                </IconButton>)
-            : (
-                <>
-                    <IconButton onClick={() => {
-                        (props.msg != null) && props.handleSpeech(props.msg, props.speech)
-                    }} size='large' color='primary'>
-                        <RecordVoiceOverIcon fontSize='small'/>
-                    </IconButton>
-                    <Checkbox
-                        checked={props.checked}
-                        onChange={(event) => {
-                            props.setChecked(event.target.checked);
-                        }
-                        }
-                        title={t('save audio to file') as string}
-                    />
-                </>
-            )
-    );
+let speech='';
+let autoSpeech = false;
+let globalSpeaking= true;
+const globalSpeakingEvent = new CustomEvent('SpeakingChange', {
+    detail: {
+        message: 'SpeakingChange'
+    }
+});
+function setIsSpeaking(isSpeaking:boolean){
+    globalSpeaking=isSpeaking;
+    document.dispatchEvent(globalSpeakingEvent);
 }
 
 function blobPartToArrayBuffer(blobParts: BlobPart[]) {
@@ -93,6 +52,18 @@ function blobPartToArrayBuffer(blobParts: BlobPart[]) {
     });
 }
 
+function stopPlay(){
+    if(currentUtterance!=null||synth.speaking){
+        synth.cancel();
+        currentUtterance=null;
+    }
+}
+function  stopAutoPlay() {
+    stopPlay()
+    autoSpeedBuffer.length = 0
+    window.cancelAnimationFrame(autoSpeedNumber)
+    autoSpeedNumber = 0;
+}
 function record_stop() {
     const date = new Date();
     const formats = {
@@ -106,7 +77,7 @@ function record_stop() {
     };
     let dateStr = `${formats.yyyy}${formats.M}${formats.d}${formats.HH}${formats.mm}${formats.ss}`;
     let filename: string = dateStr + '.mp3'; //options.defaultPath;
-    console.log('Selected file:', filename);
+    // console.log('Selected file:', filename);
     if (currentMediaRecorder != null) {
         currentMediaRecorder
             .stop()
@@ -126,7 +97,7 @@ function record_stop() {
             currentMediaRecorder = null;
         }).catch((e: any) => {
             alert('We could not retrieve your message');
-            console.log(e.message);
+            // console.log(e.message);
         });
     }
     isRecording = false;
@@ -146,15 +117,12 @@ function record_start() {
         isRecording = false;
         console.error(e.message);
     });
-
-
 }
 
 export function pushToAutoSpeedBuffer(text: string) {
     autoSpeedBuffer.push(text)
 }
-
-export function Say(props: {
+function Control(props: {
     unitType: string
     msg: Message | null
     speech: string
@@ -162,174 +130,290 @@ export function Say(props: {
 }) {
     const {t} = useTranslation()
     const [isSpeaking, setIsSpeaking] = useState(false)
+    const [unitType, setUnitType] = useState(props.unitType)
     const [speech, setSpeech] = useState(props.speech);
     const [autoSpeech, setAutoSpeech] = useState(props.autoSpeech);
     const [checked, setChecked] = useState(false);
-    const {unitType, msg} = props;
+    const {msg} = props;
+    const refIsSpeaking = useRef({
+        updateIsSpeaking: (state: boolean) => {
+            setIsSpeaking(state);
+            setUnitType(unitType)
+        }
+    });
+    // useEffect(() => {
+    //     // 在组件渲染完毕后获取所有子组件的 DOM 元素
+    //     console.log('组件渲染完毕')
+    // });
+    // const MemoizedComponentA = React.memo(SpeechControlUnitA);
+    return
+    // <>
+    //     <SpeechControlUnitA unitType={unitType} isSpeaking={isSpeaking} speechControl={speechControl}/>
+    //     <SpeechControlUnitB
+    //         unitType={unitType}
+    //         isSpeaking={isSpeaking}
+    //         speech={speech}
+    //         autoSpeech={autoSpeech}
+    //         msg={msg} checked={false}
+    //         handleSpeech={handleSpeech}
+    //         setChecked={(checked: boolean) => {
+    //         }}
+    //     />
+    // </>
 
-    function synth_cancel(msg: string | Message): boolean {
-        if (currentUtterance && currentIndex !== "-1") {
-            synth.cancel();
-            setIsSpeaking(false)
-            record_stop()
-            if (typeof msg !== 'string') {
-                if (msg.id === currentIndex) {
-                    currentUtterance = null;
-                    currentIndex = "-1";
-                }
+}
+const saveRecording = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute("style", "display: none")
+    // a.style = 'display: none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+};
+function synth_cancel(msg: string | Message): boolean {
+    if (currentUtterance && currentIndex !== "-1") {
+        synth.cancel();
+        // setIsSpeaking(false)
+        record_stop()
+        if (typeof msg !== 'string') {
+            if (msg.id === currentIndex) {
+                currentUtterance = null;
+                currentIndex = "-1";
             }
-            return true;
         }
-        return false;
+        return true;
+    }
+    return false;
+}
+function preSay(msg: string | Message, speech: string | null): SpeechSynthesisUtterance | null {
+    // const { msg } = props;
+    // const { speech } = props;
+    if (synth_cancel(msg)) return null;
+    let txt = ""
+    if (typeof msg !== 'string') {
+        txt = msg.content?.trim() || ''
+    } else {
+        txt = msg
+    }
+    if (!txt) return null;
+    const utterance = new SpeechSynthesisUtterance(txt);
+    const voices = speechSynthesis.getVoices();
+    // "speech_lang": "Microsoft Yaoyao - Chinese (Simplified, PRC)",
+    // "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
+    let voice = voices.find(voice => voice.name === speech);
+    if (!voice) {
+        voice = voices.find(voice => voice.lang === 'zh-CN');
+    }
+    utterance.voice = voice ? voice : null;
+    if (typeof msg !== 'string') {
+        currentIndex = msg.id;
+    }
+    return utterance;
+}
+const handleSpeech = (checked:boolean,
+                      msg: Message,
+                      speech: string | null,
+                      setIsSpeaking:(arg0: boolean)=>void
+) => {
+    if (autoSpeedBuffer == null) return;
+    autoSpeedBuffer.length = 0;
+    const utterance = preSay(msg, speech);
+    if (utterance === null) {
+        setIsSpeaking(false);
+        return;
     }
 
-    function preSay(msg: string | Message, speech: string | null): SpeechSynthesisUtterance | null {
-        // const { msg } = props;
-        // const { speech } = props;
-        if (synth_cancel(msg)) return null;
-        let txt = ""
-        if (typeof msg !== 'string') {
-            txt = msg.content?.trim() || ''
-        } else {
-            txt = msg
-        }
-        if (!txt) return null;
-        const utterance = new SpeechSynthesisUtterance(txt);
-        const voices = speechSynthesis.getVoices();
-        // "speech_lang": "Microsoft Yaoyao - Chinese (Simplified, PRC)",
-        // "Microsoft Xiaoxiao Online (Natural) - Chinese (Mainland)"
-        let voice = voices.find(voice => voice.name === speech);
-        if (!voice) {
-            voice = voices.find(voice => voice.lang === 'zh-CN');
-        }
-        utterance.voice = voice ? voice : null;
-        if (typeof msg !== 'string') {
-            currentIndex = msg.id;
-        }
-        return utterance;
-    }
-
-    const handleSpeech = (msg: Message, speech: string | null) => {
-        if (autoSpeedBuffer == null) return;
-        autoSpeedBuffer.length = 0;
-        const utterance = preSay(msg, speech);
-        if (utterance === null) {
-            setIsSpeaking(false);
-            return;
-        }
-        // utterance.lang = voice.lang;
-        // utterance.volume = 1;
-        // utterance.rate = 0.8;
-        // utterance.pitch = 1;
-        if (checked) {
-            record_start();
-            setIsSpeaking(true);
-            synth.speak(utterance);
-            currentUtterance = utterance;
-            currentIndex = msg.id;
-        } else {
-            synth.speak(utterance);
-            setIsSpeaking(true);
-            currentUtterance = utterance;
-            currentIndex = msg.id;
-        }
-        utterance.onend = () => {
-            record_stop()
-            setIsSpeaking(false);
-            currentUtterance = null;
-            currentIndex = "-1";
-        }
-    };
-    const saveRecording = (blob: Blob, filename: string) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.setAttribute("style", "display: none")
-        // a.style = 'display: none';
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-    };
-
-    const autoSay = (msg: string | Message, speech: string | null) => {
-        console.log("准备开始自动朗读。");
-        const utterance = preSay(msg, speech);
-        if (utterance === null) {
-            console.log("无法朗读 utterance is null!");
-            setIsSpeaking(false);
-            return;
-        }
+    if (checked) {
+        record_start();
         setIsSpeaking(true);
+        synth.speak(utterance);
+        currentUtterance = utterance;
+        currentIndex = msg.id;
+    } else {
         synth.speak(utterance);
         setIsSpeaking(true);
         currentUtterance = utterance;
-        if (typeof msg !== 'string') {
-            currentIndex = msg.id;
-        }
-
-        utterance.onend = () => {
-            if (currentMediaRecorder)
-                currentMediaRecorder.stop();
-            console.log("朗读结束了。");
-            currentMediaRecorder = null;
-            setIsSpeaking(false);
-            currentUtterance = null;
-            currentIndex = "-1";
-        }
+        currentIndex = msg.id;
     }
-    const autoSpeed = (time: DOMHighResTimeStamp) => {
-        if (!isSpeaking
-            && autoSpeedBuffer != null
-            && autoSpeedBuffer.length > 0
-            && autoSpeech) {
-            // console.log('调用 autoSay 了')
-            setIsSpeaking(true)
-            autoSay(autoSpeedBuffer.shift() as string, speech);
-        }
-        // console.log('无差别调用 autoSay 了')
-        autoSpeedNumber = window.requestAnimationFrame(autoSpeed);
+    utterance.onend = () => {
+        record_stop()
+        setIsSpeaking(false);
+        currentUtterance = null;
+        currentIndex = "-1";
     }
-    if (autoSpeedNumber < 1) {
+    // utterance.lang = voice.lang;
+    // utterance.volume = 1;
+    // utterance.rate = 0.8;
+    // utterance.pitch = 1;
+};
+const autoSay = (msg: string | Message, speech: string | null) => {
+    // console.log("准备开始自动朗读。更改状态为 true。");
+    setIsSpeaking(true);
+    const utterance = preSay(msg, speech);
+    if (utterance === null) {
+        // console.log("无法朗读 utterance is null! 更改状态为 false。");
+        // setIsSpeaking(false);
+        // refIsSpeaking.current.updateIsSpeaking(false);
+        return;
+    }
+    synth.speak(utterance);
+    setIsSpeaking(true);
+    currentUtterance = utterance;
+    if (typeof msg !== 'string') {
+        currentIndex = msg.id;
+    }
+    utterance.onerror = () => {
+        if (currentMediaRecorder)
+            currentMediaRecorder.stop();
+        currentMediaRecorder = null;
+        currentUtterance = null;
+        currentIndex = "-1";
+        // console.log("朗读发生错误了。更改状态为 false。");
+        setIsSpeaking(false);
+    }
+    utterance.onend = () => {
+        if (currentMediaRecorder)
+            currentMediaRecorder.stop();
+        // console.log("朗读结束了。更改状态为 false。");
+        currentMediaRecorder = null;
+        setIsSpeaking(false);
+        currentUtterance = null;
+        currentIndex = "-1";
+    }
+}
+const autoSpeed = (time: DOMHighResTimeStamp) => {
+    if (!synth.speaking
+        && autoSpeedBuffer != null
+        && autoSpeedBuffer.length > 0
+        && autoSpeech
+    ) {
+        // console.log('调用 autoSay 了')
         // setIsSpeaking(true)
-        console.log('default 启动autoSpeed')
-        autoSpeedNumber = window.requestAnimationFrame(autoSpeed);//default 启动autoSpeed
+        autoSay(autoSpeedBuffer.shift() as string, speech);
     }
-    const speechControl = () => {
-        if (isSpeaking) {
-            window.cancelAnimationFrame(autoSpeedNumber)
-            autoSpeedNumber = 0;
-            setIsSpeaking(!isSpeaking);
-            return
-        }
-        if (autoSpeedNumber < 1) {
-            // window.cancelAnimationFrame(autoSpeedNumber)
-            setIsSpeaking(true)
-            autoSpeedNumber = window.requestAnimationFrame(autoSpeed)
-            return
-        }
-        //||
-        setIsSpeaking(!isSpeaking);
-        //继续朗读
-    }
-    useEffect(() => {
-        // 在组件渲染完毕后获取所有子组件的 DOM 元素
-    });
-
-    return (
-        unitType === 'A' ? (
-            <SpeechControlUnitA isSpeaking={isSpeaking} speechControl={speechControl}/>
-        ) : (
-            <SpeechControlUnitB
-                isSpeaking={isSpeaking}
-                speech={speech}
-                autoSpeech={autoSpeech}
-                msg={msg} checked={false}
-                handleSpeech={handleSpeech}
-                setChecked={(checked: boolean) => {
-                }}
-            />
-        )
-    );
+    // console.log('无差别调用 autoSay 了')
+    autoSpeedNumber = window.requestAnimationFrame(autoSpeed);
 }
 
+const autoSpeedStart=(
+)=>{
+    if (autoSpeedNumber < 1 && autoSpeech) {
+        setIsSpeaking(true)
+        // isAutoSpeechStarted=true
+        // console.log('default 启动autoSpeed')
+        autoSpeedNumber = window.requestAnimationFrame(autoSpeed);//default 启动autoSpeed
+    }
+}
+const autoSpeechControl = () => {
+    globalSpeaking=!globalSpeaking
+    if (!globalSpeaking) {
+        setIsSpeaking(globalSpeaking);
+        stopAutoPlay()
+        return
+    }
+    if (autoSpeedNumber < 1) {
+        setIsSpeaking(true)
+        autoSpeedNumber = window.requestAnimationFrame(autoSpeed)
+        return
+    }
+    //||
+    setIsSpeaking(true);
+    // autoSpeedNumber = window.requestAnimationFrame(autoSpeed)
+    //继续朗读
+}
+let isAutoSpeechStarted:boolean=false
+const AutoSpeechControlUnit = (props: {
+    speech: string,
+    autoSpeech: boolean
+}) => {
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    function handleGlobalVariableChange() {
+        setIsSpeaking(globalSpeaking);
+    }
+    useEffect(() => {
+        autoSpeech=props.autoSpeech;
+        speech=props.speech;
+        autoSpeedStart();
+        document.addEventListener('SpeakingChange', handleGlobalVariableChange);
+
+        return () => document.removeEventListener('SpeakingChange', handleGlobalVariableChange);
+    }, []);
+    useEffect(() => {
+        speech=props.speech;
+        autoSpeech=props.autoSpeech;
+    }, [props.speech,props.autoSpeech]);
+    return (
+        <IconButton size='large' color='primary' onClick={() => autoSpeechControl()}>
+            {isSpeaking ? (
+                <PauseCircleOutlineOutlinedIcon/>
+            ) : (
+                <PlayCircleFilledWhiteOutlinedIcon/>
+            )}
+        </IconButton>
+    )
+}
+const Say =(
+    props: {
+    // unitType: string,
+    // isSpeaking: boolean
+    msg: Message | null,
+    speech: string,
+    autoSpeech: boolean
+    // autoSpeech?: boolean,
+    // checked?: boolean,
+    // handleSpeech(msg: Message | null, speech: string): void,
+    // setChecked(checked: boolean): void,
+        }
+) => {
+    const {t} = useTranslation()
+    const [checked,setChecked]= useState(false);
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    function handleGlobalVariableChange() {
+        setIsSpeaking(globalSpeaking);
+    }
+    useEffect(() => {
+        autoSpeech=props.autoSpeech;
+        speech=props.speech;
+        autoSpeedStart();
+        document.addEventListener('SpeakingChange', handleGlobalVariableChange);
+
+        return () => document.removeEventListener('SpeakingChange', handleGlobalVariableChange);
+    }, []);
+    useEffect(() => {
+        speech=props.speech;
+        autoSpeech=props.autoSpeech;
+    }, [props.speech,props.autoSpeech]);
+    return (
+        isSpeaking
+            ? (
+                <IconButton onClick={() => {
+                    (props.msg != null) && handleSpeech(checked,props.msg, props.speech,setIsSpeaking)
+                }} size='large' color='primary'>
+                    <VoiceOverOffIcon fontSize='small'/>
+                </IconButton>)
+            : (
+                <>
+                    <IconButton onClick={() => {
+                        (props.msg != null) && handleSpeech(checked,props.msg, props.speech,setIsSpeaking)
+                    }} size='large' color='primary'>
+                        <RecordVoiceOverIcon fontSize='small'/>
+                    </IconButton>
+                    <Checkbox
+                        checked={checked}
+                        onChange={(event) => {
+                            setChecked(event.target.checked);
+                        }
+                        }
+                        title={t('save audio to file') as string}
+                    />
+                </>
+            )
+    );
+}
+export default function (): void {
+    return
+}
+export {Say, AutoSpeechControlUnit}

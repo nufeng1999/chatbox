@@ -46,7 +46,7 @@ async function handleCompatibilityV0_1() {
     try {
         const handled = await store.get('hasHandleCompatibilityV0_1')
         if (!handled) {
-            const oldConfigJson ='';// await api.fs.readTextFile('chatbox/config.json', { dir: api.fs.Dir.LocalData })
+            const oldConfigJson ='';// await api.fs.readTextFile('config.json', { dir: api.fs.Dir.LocalData })
             const oldConfig = JSON.parse(oldConfigJson)
             for (const key in oldConfig) {
                 await store.set(key, oldConfig[key])

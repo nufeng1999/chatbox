@@ -205,7 +205,7 @@ function _Block(props: Props) {
                 <Grid item xs={12} sm container style={{ paddingTop:"0px",paddingLeft:"10px",paddingRight:"10px"}}>
                     <Grid item xs container direction="column" marginLeft="0">
                         <Stack id='Stack' spacing={2}>
-                            <Grid item xs={12} sx={{maxHeight: '32px',}}>
+                            <Grid item xs={12} sx={{maxHeight: '32px',}} style={{marginTop:"-15px"}}>
                                 {
                                     isEditing ? (
                                         <>
@@ -246,7 +246,7 @@ function _Block(props: Props) {
                                                                 </IconButton>
                                                             )
                                                     }
-                                                    <Say unitType='B' {...props} />
+                                                    <Say {...props} />
                                                     <IconButton onClick={handleClick} size='large' color='primary'>
                                                         <MoreVertIcon/>
                                                     </IconButton>

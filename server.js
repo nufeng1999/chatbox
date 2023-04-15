@@ -15,7 +15,13 @@ app.use(express.static(path.join(__dirname, '')));
 //              res) {
 //     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 // });
-app.get('/*', function (req, res, next) {
+// app.get('/*', function (req, res, next) {
+//     if (!req.path.includes('api'))
+//         res.sendFile(path.join(__dirname, '', 'index.html'));
+//     else next();
+// });
+app.all('/*', function (req, res, next) {
+    console.log(req.path)
     if (!req.path.includes('api'))
         res.sendFile(path.join(__dirname, '', 'index.html'));
     else next();

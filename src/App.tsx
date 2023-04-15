@@ -38,7 +38,7 @@ import {ThemeSwitcherProvider} from './theme/ThemeSwitcher';
 import {useTranslation} from "react-i18next";
 import icon from './icon.png'
 import WaitingGif from './Waiting.gif'
-import {pushToAutoSpeedBuffer,Say} from "./Say";
+import {AutoSpeechControlUnit, pushToAutoSpeedBuffer, } from "./Say";
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
@@ -661,10 +661,7 @@ function MessageInput(props: {
                         </IconButton>
                         {
                         props.settings.autoSpeech &&(
-                        <Say unitType='A'
-                             msg={null}
-                             autoSpeech={props.settings.autoSpeech}
-                             speech={props.settings.speech} />)
+                        <AutoSpeechControlUnit speech={props.settings.speech} autoSpeech={props.settings.autoSpeech}/>)
                         }
                         <IconButton size='large' color='primary' disabled={!isTalking && listening}
                                     onClick={talking}>

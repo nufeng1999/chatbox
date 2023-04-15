@@ -4,7 +4,7 @@ import {
     Dialog, DialogContent, DialogActions, DialogTitle, DialogContentText, TextField,
     FormGroup, FormControlLabel, Switch, Select, MenuItem, FormControl, InputLabel, Slider, Typography, Box,
 } from '@mui/material';
-import { Settings } from './types'
+import {OpenAIRoleEnum, Settings} from './types'
 import { getDefaultSettings } from './store'
 import ThemeChangeButton from './theme/ThemeChangeIcon';
 import { ThemeMode } from './theme/index';
@@ -15,6 +15,14 @@ import MuiAccordion, { AccordionProps } from '@mui/material/Accordion';
 import MuiAccordionSummary, { AccordionSummaryProps } from '@mui/material/AccordionSummary';
 import ArrowForwardIosSharpIcon from '@mui/icons-material/ArrowForwardIosSharp';
 import { useTranslation } from 'react-i18next'
+import Avatar from "@mui/material/Avatar";
+import SettingsIcon from "@mui/icons-material/Settings";
+import PersonIcon from "@mui/icons-material/Person";
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import Face4TwoToneIcon from '@mui/icons-material/Face4TwoTone';
+import Face5TwoToneIcon from '@mui/icons-material/Face5TwoTone';
+
+
 
 const { useEffect } = React
 const models: string[] = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314'];
@@ -331,6 +339,27 @@ export default function SettingWindow(props: Props) {
 
                     </AccordionDetails>
                 </Accordion>
+                <FormControl fullWidth variant="outlined" margin="dense">
+                    <InputLabel htmlFor="icon-select">{t('assistant icon')}</InputLabel>
+                    <Select
+                        label="icon"
+                        id="icon-select"
+                        value={settingsEdit.assistantIcon}
+                        onChange={(e) => {
+                            setSettingsEdit({ ...settingsEdit, assistantIcon: e.target.value });
+                        }}>
+                        <MenuItem value='SmartToyIcon'>
+                            <Avatar><SmartToyIcon/></Avatar>
+                        </MenuItem>
+                        <MenuItem value='Face4TwoToneIcon'>
+                            <Avatar><Face4TwoToneIcon/></Avatar>
+                        </MenuItem>
+                        <MenuItem value='Face5TwoToneIcon'>
+                            <Avatar><Face5TwoToneIcon/></Avatar>
+                        </MenuItem>
+                    </Select>
+                </FormControl>
+
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCancel}>{t('cancel')}</Button>
