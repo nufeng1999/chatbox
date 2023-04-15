@@ -202,10 +202,10 @@ function _Block(props: Props) {
                         )
                     }
                 </Grid>
-                <Grid item xs={12} sm container style={{ paddingTop:"0px",paddingLeft:"10px",paddingRight:"10px"}}>
+                <Grid item xs={12} sm container style={{ paddingTop:"0px",paddingLeft:"0px",paddingRight:"0px"}}>
                     <Grid item xs container direction="column" marginLeft="0">
-                        <Stack id='Stack' spacing={2}>
-                            <Grid item xs={12} sx={{maxHeight: '32px',}} style={{marginTop:"-15px"}}>
+                        <Stack id='Stack' spacing={2} style={{paddingRight:"0px" }}>
+                            <Grid item xs={12} sx={{maxHeight: '32px',}} style={{marginTop:"-15px",position:"fixed"}}>
                                 {
                                     isEditing ? (
                                         <>
@@ -320,6 +320,7 @@ function _Block(props: Props) {
                                             sx={{
                                                 wordBreak: 'break-word',
                                             }}
+                                            style={{width:'100'}}
                                             dangerouslySetInnerHTML={{__html:msg.format==='html'?( msg.content):md.render(msg.content)}}
 
                                         />
