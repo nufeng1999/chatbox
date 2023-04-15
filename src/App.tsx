@@ -38,7 +38,7 @@ import {ThemeSwitcherProvider} from './theme/ThemeSwitcher';
 import {useTranslation} from "react-i18next";
 import icon from './icon.png'
 import WaitingGif from './Waiting.gif'
-import {AutoSpeechControlUnit, pushToAutoSpeedBuffer, } from "./Say";
+import {AutoSpeechControlUnit, pushToAutoSpeedBuffer,} from "./Say";
 import LeftSideBar from './leftside/LeftSideBar';
 import MicOffIcon from './mic_off.png';
 import MicOnIcon from './mic_on.png';
@@ -440,7 +440,7 @@ function Main() {
 
                 {/*右边内容结束*/}
             </Grid>
-            <Grid style={{
+            <Grid id='inputbar' style={{
                 position: 'absolute',
                 width: '100%',
                 bottom: '0px',
@@ -533,7 +533,7 @@ interface RecognitionEvent {
 function MessageInput(props: {
     isScrolling: boolean
     scrollControl(): void
-    settings:Settings
+    settings: Settings
     onSubmit: (newMsg: Message, needGenerating?: boolean) => void
     setMessageInput: (value: string) => void
 }) {
@@ -591,7 +591,7 @@ function MessageInput(props: {
             submit()
         }}>
             <Grid container>
-                <Grid item xs={12}>{
+                <Grid id='inputFbackground' item xs={12}>{
                     isTalking ? (
                             <TextField
                                 multiline
@@ -621,7 +621,19 @@ function MessageInput(props: {
                                 multiline
                                 label="Prompt"
                                 value={nmessageInput}
-                                onChange={(event) => setNmessageInput(event.target.value)}
+                                onChange={(event) => {
+                                    //判断输入框的高
+                                    // const myDiv =document.getElementById('inputField')
+                                    const height = window.getComputedStyle(
+                                        document.getElementById('message-input') as HTMLElement)
+                                        .getPropertyValue('height');
+                                    //
+                                    //如果高变大了则调整其位置 inputbar 的height+字体高
+                                    //中间层height减小 字体高
+                                    //修改inputFbackground background-color 为主题背景
+                                    //
+                                    setNmessageInput(event.target.value)
+                                }}
                                 fullWidth
                                 maxRows={12}
                                 autoFocus
@@ -660,8 +672,9 @@ function MessageInput(props: {
                             }
                         </IconButton>
                         {
-                        props.settings.autoSpeech &&(
-                        <AutoSpeechControlUnit speech={props.settings.speech} autoSpeech={props.settings.autoSpeech}/>)
+                            props.settings.autoSpeech && (
+                                <AutoSpeechControlUnit speech={props.settings.speech}
+                                                       autoSpeech={props.settings.autoSpeech}/>)
                         }
                         <IconButton size='large' color='primary' disabled={!isTalking && listening}
                                     onClick={talking}>
@@ -683,6 +696,7 @@ function MessageInput(props: {
         </form>
     )
 }
+
 export default function App() {
     return (
         <ThemeSwitcherProvider>

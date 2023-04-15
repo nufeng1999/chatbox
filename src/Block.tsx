@@ -320,7 +320,7 @@ function _Block(props: Props) {
                                             sx={{
                                                 wordBreak: 'break-word',
                                             }}
-                                            style={{width:'100'}}
+                                            style={{width:'100%'}}
                                             dangerouslySetInnerHTML={{__html:msg.format==='html'?( msg.content):md.render(msg.content)}}
 
                                         />
