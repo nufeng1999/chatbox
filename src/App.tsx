@@ -49,6 +49,7 @@ import Face4TwoToneIcon from '@mui/icons-material/Face4TwoTone';
 import Face5TwoToneIcon from '@mui/icons-material/Face5TwoTone';
 import {display} from "@mui/system";
 import {OverridableComponent} from "@mui/types";
+// @ts-ignore
 
 const {useEffect, useState} = React
 

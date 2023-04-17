@@ -43,6 +43,7 @@ export default function SettingWindow(props: Props) {
     const { t } = useTranslation()
     const [settingsEdit, setSettingsEdit] = React.useState<Settings>(props.settings);
     const [vlist, setVoices] = React.useState<any[]>([]);
+    const [langVoices, setLangVoices] = React.useState<any[]>([]);
     const handleRepliesTokensSliderChange = (event: Event, newValue: number | number[], activeThumb: number) => {
         if (newValue === 8192) {
             setSettingsEdit({ ...settingsEdit, maxTokens: 'inf' });
@@ -108,19 +109,34 @@ export default function SettingWindow(props: Props) {
     }
 
     React.useEffect(() => {
-        speechSynthesis.addEventListener('voiceschanged', () => {
+        if(typeof window.speechSynthesis !== "undefined") {
+            speechSynthesis.addEventListener('voiceschanged', () => {
 
-            const voices = speechSynthesis.getVoices();
-            voices.forEach((voice) => {
-                // console.log(voice.name); // 输出语音的名称
-            })
-            // console.log(voices);
-            setVoices(voices);
-        });
-        setVoices(speechSynthesis.getVoices());
+                const voices = speechSynthesis.getVoices();
+                voices.forEach((voice) => {
+                    // console.log(voice.name); // 输出语音的名称
+                })
+                // console.log(voices);
+                setVoices(voices);
+            });
+            setVoices(speechSynthesis.getVoices());
+        }
+        // @ts-ignore
+        if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
+            // 在 Cordova 环境下执行的代码
+            // @ts-ignore
+            const TTS = cordova.plugins.TTS
+            // @ts-ignore
+            TTS.getVoices().then(function (voices) {
+                // Array of voices [{name:'', identifier: '', language: ''},..] see TS-declarations
+                setVoices(voices);
+                // @ts-ignore
+            }, function (reason) {
+                // alert(reason);
+            });
+        }
     },[]);
 
-    // @ts-ignore
     // @ts-ignore
     return (
         <Dialog open={props.open} onClose={onCancel} fullWidth >
@@ -161,11 +177,21 @@ export default function SettingWindow(props: Props) {
                         onChange={(e) => {
                             setSettingsEdit({ ...settingsEdit, speech: e.target.value });
                         }}>
-                        {vlist.map((voice) => (
-                            <MenuItem key={voice.voiceURI} value={voice.voiceURI}>
-                                {voice.name} {': '}
-                            </MenuItem>
-                        ))}
+                        {
+                            // @ts-ignore {name:'', identifier: '', language: ''}
+                            (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined")?(
+                                vlist.map((voice) => (
+                                    <MenuItem key={voice.identifier} value={voice.identifier}>
+                                        {voice.name} {': '}
+                                    </MenuItem>))
+                            ):(
+                            vlist.map((voice) => (
+                                <MenuItem key={voice.voiceURI} value={voice.voiceURI}>
+                                    {voice.name} {': '}
+                                </MenuItem>
+                            ))
+                            )
+                        }
                     </Select>
                 </FormControl>
                 <FormControl sx={{ flexDirection: 'row', alignItems: 'center', paddingTop: 1, paddingBottom: 1 }}>

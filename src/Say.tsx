@@ -22,7 +22,17 @@ const MicRecorder = require('mic-recorder-to-mp3');
 let currentMediaRecorder: any = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentIndex: string = "-1";
-const synth = window.speechSynthesis;
+let synth:any=null;
+// @ts-ignore
+if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
+    // 在 Cordova 环境下执行的代码
+//  synth = window.speechSynthesis;
+} else {
+    if(typeof window.speechSynthesis !== "undefined")
+        void 0;
+        // synth = window.speechSynthesis;
+}
+
 let autoSpeedBuffer: Array<string> = new Array<string>();
 let autoSpeedNumber: number = 0
 let isRecording: boolean = false;
@@ -300,6 +310,11 @@ const autoSpeed = (time: DOMHighResTimeStamp) => {
 
 const autoSpeedStart=(
 )=>{
+    // @ts-ignore
+    if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
+        // 在 Cordova 环境下执行的代码
+        return;
+    }
     if (autoSpeedNumber < 1 && autoSpeech) {
         setIsSpeaking(true)
         // isAutoSpeechStarted=true
