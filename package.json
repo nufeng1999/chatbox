@@ -7,6 +7,7 @@
   "scripts": {
     "start:react": "react-scripts start",
     "build:react": "react-scripts build ",
+    "cp to chatai": "rm -rf ../chatai/www/* && cp -rf build/* ../chatai/www/",
     "test:react": "react-scripts test",
     "eject:react": "react-scripts eject",
     "build:express": "react-scripts build && cp -f server.js build/ && cd build && npm install ",

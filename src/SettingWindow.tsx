@@ -1,8 +1,24 @@
 import React from 'react';
 import {
-    Button, Alert,
-    Dialog, DialogContent, DialogActions, DialogTitle, DialogContentText, TextField,
-    FormGroup, FormControlLabel, Switch, Select, MenuItem, FormControl, InputLabel, Slider, Typography, Box,
+    Button,
+    Alert,
+    Dialog,
+    DialogContent,
+    DialogActions,
+    DialogTitle,
+    DialogContentText,
+    TextField,
+    FormGroup,
+    FormControlLabel,
+    Switch,
+    Select,
+    MenuItem,
+    FormControl,
+    InputLabel,
+    Slider,
+    Typography,
+    Box,
+    SvgIconTypeMap,
 } from '@mui/material';
 import {OpenAIRoleEnum, Settings} from './types'
 import { getDefaultSettings } from './store'
@@ -19,10 +35,22 @@ import Avatar from "@mui/material/Avatar";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PersonIcon from "@mui/icons-material/Person";
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import FaceIcon from '@mui/icons-material/Face';
+import Face2Icon from '@mui/icons-material/Face2';
+import Face3Icon from '@mui/icons-material/Face3';
+import Face4Icon from '@mui/icons-material/Face4';
+import Face5Icon from '@mui/icons-material/Face5';
+import Face6Icon from '@mui/icons-material/Face6';
 import Face4TwoToneIcon from '@mui/icons-material/Face4TwoTone';
 import Face5TwoToneIcon from '@mui/icons-material/Face5TwoTone';
-
-
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import CloudIcon from '@mui/icons-material/Cloud';
+import SettingsSystemDaydreamIcon from '@mui/icons-material/SettingsSystemDaydream';
+import SchoolIcon from '@mui/icons-material/School';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import {OverridableComponent} from "@mui/types";
 
 const { useEffect } = React
 const models: string[] = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'gpt-4', 'gpt-4-0314', 'gpt-4-32k', 'gpt-4-32k-0314'];
@@ -35,6 +63,7 @@ const languageMap: { [key: string]: string } = {
 interface Props {
     open: boolean
     settings: Settings
+    assistantIconMap:{[key: string]: any}
     close(): void
     save(settings: Settings): void
 }
@@ -44,6 +73,8 @@ export default function SettingWindow(props: Props) {
     const [settingsEdit, setSettingsEdit] = React.useState<Settings>(props.settings);
     const [vlist, setVoices] = React.useState<any[]>([]);
     const [langVoices, setLangVoices] = React.useState<any[]>([]);
+
+    const assistantIconkeys = Object.keys(props.assistantIconMap);
     const handleRepliesTokensSliderChange = (event: Event, newValue: number | number[], activeThumb: number) => {
         if (newValue === 8192) {
             setSettingsEdit({ ...settingsEdit, maxTokens: 'inf' });
@@ -374,15 +405,17 @@ export default function SettingWindow(props: Props) {
                         onChange={(e) => {
                             setSettingsEdit({ ...settingsEdit, assistantIcon: e.target.value });
                         }}>
-                        <MenuItem value='SmartToyIcon'>
-                            <Avatar><SmartToyIcon/></Avatar>
-                        </MenuItem>
-                        <MenuItem value='Face4TwoToneIcon'>
-                            <Avatar><Face4TwoToneIcon/></Avatar>
-                        </MenuItem>
-                        <MenuItem value='Face5TwoToneIcon'>
-                            <Avatar><Face5TwoToneIcon/></Avatar>
-                        </MenuItem>
+                        {
+                            assistantIconkeys.map((key) => {
+                                let AssistantIcon
+                                    =props.assistantIconMap[key] as OverridableComponent<SvgIconTypeMap<{}, "svg">> & {muiName: string};
+                                return(
+                                <MenuItem value={key}>
+                                <Avatar><AssistantIcon/></Avatar>
+                                </MenuItem>
+                                )
+                            })
+                        }
                     </Select>
                 </FormControl>
 

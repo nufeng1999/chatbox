@@ -45,8 +45,21 @@ import MicOnIcon from './mic_on.png';
 import iconLib from "./iconLib";
 import SpeechRecognition, {useSpeechRecognition} from 'react-speech-recognition';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import FaceIcon from '@mui/icons-material/Face';
+import Face2Icon from '@mui/icons-material/Face2';
+import Face3Icon from '@mui/icons-material/Face3';
+import Face4Icon from '@mui/icons-material/Face4';
+import Face5Icon from '@mui/icons-material/Face5';
+import Face6Icon from '@mui/icons-material/Face6';
 import Face4TwoToneIcon from '@mui/icons-material/Face4TwoTone';
 import Face5TwoToneIcon from '@mui/icons-material/Face5TwoTone';
+import ChildCareIcon from '@mui/icons-material/ChildCare';
+import SelfImprovementIcon from '@mui/icons-material/SelfImprovement';
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import CloudIcon from '@mui/icons-material/Cloud';
+import SettingsSystemDaydreamIcon from '@mui/icons-material/SettingsSystemDaydream';
+import SchoolIcon from '@mui/icons-material/School';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import {display} from "@mui/system";
 import {OverridableComponent} from "@mui/types";
 // @ts-ignore
@@ -63,15 +76,24 @@ function Main() {
     const [openSettingWindow, setOpenSettingWindow] = React.useState(false);
     let isReady = false;
 
-    const assistantIconMap = {SmartToyIcon, Face4TwoToneIcon, Face5TwoToneIcon}
+    const assistantIconMap
+        = {SmartToyIcon,
+        FaceIcon,
+        Face2Icon,
+        Face3Icon,
+        Face4Icon,
+        Face5Icon,
+        Face6Icon,
+        ChildCareIcon,
+        SelfImprovementIcon,
+        EngineeringIcon,
+        CloudIcon,
+        SettingsSystemDaydreamIcon,
+        SchoolIcon,
+        VisibilityIcon,
+        Face4TwoToneIcon,
+        Face5TwoToneIcon}
     const getAssistantIcon = (iconName: string) => {
-        // let DynamicComponent=null;
-        // if(msg.role=='assistant') {
-        //     if(props.assistantIcon==null)
-        //         props.assistantIcon='SmartToyIcon'
-        //     const componentType = props.assistantIcon;
-        //     DynamicComponent = React.createElement(componentType);
-        // }
         const assistantIconMapElement = assistantIconMap[iconName as keyof typeof assistantIconMap];
         return assistantIconMapElement;
     }
@@ -294,7 +316,7 @@ function Main() {
                          configureChatConfig={configureChatConfig}
                          setConfigureChatConfig={setConfigureChatConfig}
             />
-            <AppBar position="static">
+
                 <Box>
                     <Toolbar variant="dense">
                         {leftSideBarVisible ? (
@@ -334,7 +356,7 @@ function Main() {
                     </Toolbar>
                     <Divider/>
                 </Box>
-            </AppBar>
+
             <Grid item xs={12} sx={{
                 flexWrap: 'nowrap',
                 height: 'auto',
@@ -478,6 +500,7 @@ function Main() {
 
             <SettingWindow open={openSettingWindow}
                            settings={store.settings}
+                           assistantIconMap={assistantIconMap}
                            save={(settings) => {
                                store.setSettings(settings)
                                setOpenSettingWindow(false)
