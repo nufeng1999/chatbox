@@ -21,6 +21,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import {styled, alpha} from '@mui/material/styles';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import StopIcon from '@mui/icons-material/Stop';
+import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import * as wordCount from './utils'
@@ -85,6 +86,7 @@ export interface Props {
     delMsg: () => void
     refreshMsg: () => void
     copyMsg: () => void
+    shareMsg: () => void
     quoteMsg: () => void
 }
 
@@ -259,6 +261,13 @@ function _Block(props: Props) {
                                                         onClose={handleClose}
                                                         key={msg.id + 'menu'}
                                                     >
+                                                        <MenuItem key={msg.id + 'share'} onClick={() => {
+                                                            props.shareMsg()
+                                                            setAnchorEl(null)
+                                                        }} disableRipple>
+                                                            <ShareOutlinedIcon/>
+                                                            {t('share')}
+                                                        </MenuItem>
                                                         <MenuItem key={msg.id + 'copy'} onClick={() => {
                                                             props.copyMsg()
                                                             setAnchorEl(null)

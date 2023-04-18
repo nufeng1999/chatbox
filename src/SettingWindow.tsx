@@ -155,16 +155,10 @@ export default function SettingWindow(props: Props) {
         // @ts-ignore
         if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
             // 在 Cordova 环境下执行的代码
-            // @ts-ignore
-            const TTS = cordova.plugins.TTS
-            // @ts-ignore
-            TTS.getVoices().then(function (voices) {
-                // Array of voices [{name:'', identifier: '', language: ''},..] see TS-declarations
-                setVoices(voices);
-                // @ts-ignore
-            }, function (reason) {
-                // alert(reason);
-            });
+            document.addEventListener('deviceready', function() {
+
+
+            }, false);
         }
     },[]);
 

@@ -6,7 +6,7 @@
   "description": "a cross-platform desktop client for ChatGPT API (OpenAI API)",
   "scripts": {
     "start:react": "react-scripts start",
-    "build:react": "react-scripts build ",
+    "build:react": "react-scripts build && cp -f index.html build/",
     "cp to chatai": "rm -rf ../chatai/www/static && cp -rf build/* ../chatai/www/",
     "test:react": "react-scripts test",
     "eject:react": "react-scripts eject",

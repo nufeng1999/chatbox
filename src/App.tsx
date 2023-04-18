@@ -448,6 +448,36 @@ function Main() {
                                                    navigator.clipboard.writeText(msg.content)
                                                    store.addToast(t('copied to clipboard'))
                                                }}
+                                               shareMsg={() => {
+                                                   // @ts-ignore
+                                                   if (typeof window.cordova !== "undefined") {
+                                                       var options = {
+                                                           message: msg.content,
+                                                           subject: 'ChatAI',
+                                                           // files: ['path/to/file'], // 可选项
+                                                           // url: ''
+                                                       };
+                                                       // @ts-ignore
+                                                       window.plugins.socialsharing.shareWithOptions(options, function(result) {
+                                                           console.log('分享成功：' + result.completed);
+                                                       },
+                                                           // @ts-ignore
+                                                           function(error) {
+                                                           console.log('分享失败：' + error);
+                                                       });
+                                                       return
+                                                   }
+                                                   if (navigator.share) {
+                                                       navigator.share({
+                                                           title: 'ChatAI',
+                                                           text: msg.content,
+                                                       })
+                                                           .then(() => console.log('共享成功。'))
+                                                           .catch((err) =>{
+                                                               store.addToast(err)
+                                                               console.log('共享失败：', err)});
+                                                   }
+                                               }}
                                                quoteMsg={() => {
                                                    let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
                                                    input += '\n\n-------------------\n\n'
