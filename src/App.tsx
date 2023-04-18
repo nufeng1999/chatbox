@@ -14,7 +14,7 @@ import MicOffOutlinedIcon from '@mui/icons-material/MicOffOutlined';
 
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import {BottomNavigation, BottomNavigationAction, SvgIconTypeMap} from '@mui/material';
+import {BottomNavigation, BottomNavigationAction, Checkbox, SvgIconTypeMap} from '@mui/material';
 import {
     Toolbar, Box, Badge, Snackbar,
     List, ListSubheader, ListItemText, MenuList,
@@ -22,7 +22,7 @@ import {
     TextField, AppBar
 } from '@mui/material';
 import {isMobile} from "react-device-detect";
-import {Session, createSession, Message, createMessage, Settings, OpenAIRoleEnum} from './types'
+import {Session, createSession, Message, createMessage, Settings, OpenAIRoleEnum, OpenAIRoleEnumType} from './types'
 import useStore from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
@@ -62,6 +62,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import {display} from "@mui/system";
 import {OverridableComponent} from "@mui/types";
+import {dall_e_Replay} from "./client";
 // @ts-ignore
 
 const {useEffect, useState} = React
@@ -77,7 +78,8 @@ function Main() {
     let isReady = false;
 
     const assistantIconMap
-        = {SmartToyIcon,
+        = {
+        SmartToyIcon,
         FaceIcon,
         Face2Icon,
         Face3Icon,
@@ -92,7 +94,8 @@ function Main() {
         SchoolIcon,
         VisibilityIcon,
         Face4TwoToneIcon,
-        Face5TwoToneIcon}
+        Face5TwoToneIcon
+    }
     const getAssistantIcon = (iconName: string) => {
         const assistantIconMapElement = assistantIconMap[iconName as keyof typeof assistantIconMap];
         return assistantIconMapElement;
@@ -241,6 +244,59 @@ function Main() {
 
     const generate = async (session: Session, promptMsgs: Message[], targetMsg: Message) => {
         messageScrollRef.current = {msgId: targetMsg.id, smooth: false}
+        const lastMsg = promptMsgs[promptMsgs.length - 1];
+        if(lastMsg.createImg){
+            await client.dall_e_Replay({
+                apiKey:store.settings.openaiKey,
+                host:store.settings.apiHost,
+                maxContextSize:store.settings.maxContextSize,
+                maxTokens:store.settings.maxTokens,
+                modelName:session.model,
+                msg:lastMsg.content,
+                n: 1,
+                size: "512x512",
+                response_format: "url",
+                onText:({text, frPos, cancel}):number => {
+                        for (let i = 0; i < session.messages.length; i++) {
+                            if (session.messages[i].id === targetMsg.id) {
+                                session.messages[i] = {
+                                    ...session.messages[i],
+                                    format: "img",
+                                    content: text,
+                                    cancel,
+                                }
+
+                                const regex = /(？|！|：|。|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
+                                regex.lastIndex = frPos
+                                let match = regex.exec(text);
+                                if (match != null && match.index > frPos) {
+                                    let substr = text.substring(frPos, match.index + 1)
+                                    pushToAutoSpeedBuffer(substr)
+                                    frPos = match.index + 1
+                                }
+                                break;
+                            }
+                        }
+                        store.updateChatSession(session)
+                        return frPos;
+                    },
+                onError:(err) => {
+                            for (let i = 0; i < session.messages.length; i++) {
+                                if (session.messages[i].id === targetMsg.id) {
+                                    session.messages[i] = {
+                                        ...session.messages[i],
+                                        content: t('api request failed:') + ' \n```\n' + err.message + '\n```',
+                                    }
+                                    break
+                                }
+                            }
+                            store.updateChatSession(session)
+                        }
+                }
+            )
+            messageScrollRef.current = null
+            return
+        }
         await client.replay(
             store.settings.openaiKey,
             store.settings.apiHost,
@@ -317,45 +373,45 @@ function Main() {
                          setConfigureChatConfig={setConfigureChatConfig}
             />
 
-                <Box>
-                    <Toolbar variant="dense">
-                        {leftSideBarVisible ? (
-                            <IconButton onClick={() => {
-                                setLeftSideBarVisible(false);
-                                // setRightContentWidth("fit-content")
-                            }}
-                                        edge="end" color="inherit"
-                                        aria-label="menu" sx={{mr: 2}}>
-                                <ArrowBackIosNewIcon/>
-                            </IconButton>
-                        ) : (
-                            <IconButton onClick={() => {
-                                setLeftSideBarVisible(true);
-                                setRightContentWidth("min-content")
-                            }}
-                                        edge="start" color="inherit"
-                                        aria-label="menu" sx={{mr: 1}}>
-                                <ArrowForwardIosIcon/>
-                            </IconButton>
-                        )}
-                        <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}>
-                            <ChatBubbleOutlineOutlinedIcon/>
+            <Box>
+                <Toolbar variant="dense">
+                    {leftSideBarVisible ? (
+                        <IconButton onClick={() => {
+                            setLeftSideBarVisible(false);
+                            // setRightContentWidth("fit-content")
+                        }}
+                                    edge="end" color="inherit"
+                                    aria-label="menu" sx={{mr: 2}}>
+                            <ArrowBackIosNewIcon/>
                         </IconButton>
-                        <Typography variant="body2" color="inherit" component="div" noWrap sx={{flexGrow: 1}}>
+                    ) : (
+                        <IconButton onClick={() => {
+                            setLeftSideBarVisible(true);
+                            setRightContentWidth("min-content")
+                        }}
+                                    edge="start" color="inherit"
+                                    aria-label="menu" sx={{mr: 1}}>
+                            <ArrowForwardIosIcon/>
+                        </IconButton>
+                    )}
+                    <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}>
+                        <ChatBubbleOutlineOutlinedIcon/>
+                    </IconButton>
+                    <Typography variant="body2" color="inherit" component="div" noWrap sx={{flexGrow: 1}}>
                                     <span onClick={() => {
                                         editCurrentSession()
                                     }} style={{cursor: 'pointer'}}>
                                         {store.currentSession.name}
                                     </span>
-                        </Typography>
-                        <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}
-                                    onClick={() => setSessionClean(store.currentSession)}
-                        >
-                            <CleaningServicesIcon/>
-                        </IconButton>
-                    </Toolbar>
-                    <Divider/>
-                </Box>
+                    </Typography>
+                    <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}
+                                onClick={() => setSessionClean(store.currentSession)}
+                    >
+                        <CleaningServicesIcon/>
+                    </IconButton>
+                </Toolbar>
+                <Divider/>
+            </Box>
 
             <Grid item xs={12} sx={{
                 flexWrap: 'nowrap',
@@ -458,13 +514,13 @@ function Main() {
                                                            // url: ''
                                                        };
                                                        // @ts-ignore
-                                                       window.plugins.socialsharing.shareWithOptions(options, function(result) {
-                                                           console.log('分享成功：' + result.completed);
-                                                       },
+                                                       window.plugins.socialsharing.shareWithOptions(options, function (result) {
+                                                               console.log('分享成功：' + result.completed);
+                                                           },
                                                            // @ts-ignore
-                                                           function(error) {
-                                                           console.log('分享失败：' + error);
-                                                       });
+                                                           function (error) {
+                                                               console.log('分享失败：' + error);
+                                                           });
                                                        return
                                                    }
                                                    if (navigator.share) {
@@ -473,9 +529,10 @@ function Main() {
                                                            text: msg.content,
                                                        })
                                                            .then(() => console.log('共享成功。'))
-                                                           .catch((err) =>{
+                                                           .catch((err) => {
                                                                store.addToast(err)
-                                                               console.log('共享失败：', err)});
+                                                               console.log('共享失败：', err)
+                                                           });
                                                    }
                                                }}
                                                quoteMsg={() => {
@@ -497,9 +554,15 @@ function Main() {
                 position: 'absolute',
                 width: '100%',
                 bottom: '0px',
+                fontSize:"0px",
                 height: '120px'
             }}>
-                <Box sx={{padding: '20px 0', width: '99%', height: 'auto'}}>
+                <Box sx={{padding: '20px 0', width: '99%', height: 'auto'}} style={{
+                    verticalAlign:"top",
+                    display:"inline-block",
+                    fontSize:"0px",
+                    paddingTop:"0px",
+                }}>
                     <MessageInput
                         isScrolling={isScrolling}
                         scrollControl={scrollControl}
@@ -598,12 +661,13 @@ function MessageInput(props: {
         browserSupportsSpeechRecognition
     } = useSpeechRecognition();
     const [isTalking, setIsTalking] = React.useState(false)
-
+    const [isCreimgChecked,setIsCreimgChecked]=React.useState(false)
 
     const {t} = useTranslation()
     // const {setMessageInput} = props
     const [nmessageInput, setNmessageInput] = React.useState("")
     const submit = (needGenerating = true) => {
+        const newmsg={role:OpenAIRoleEnum.User,content: nmessageInput,format: 'markdown',createImg:isCreimgChecked}
         if (isTalking) {
             if (transcript.length === 0) {
                 return;
@@ -611,7 +675,7 @@ function MessageInput(props: {
             props.setMessageInput(transcript)
             SpeechRecognition.stopListening();
             setIsTalking(false);
-            props.onSubmit(createMessage('user', transcript), needGenerating)
+            props.onSubmit(createMessage(newmsg.role,newmsg.content,newmsg.format,newmsg.createImg), needGenerating)
             resetTranscript()
             props.setMessageInput('')
             setNmessageInput('')
@@ -620,8 +684,9 @@ function MessageInput(props: {
         if (nmessageInput.length === 0) {
             return;
         }
+
         props.setMessageInput(nmessageInput)
-        props.onSubmit(createMessage('user', nmessageInput), needGenerating)
+        props.onSubmit(createMessage(newmsg.role,newmsg.content,newmsg.format,newmsg.createImg), needGenerating)
         resetTranscript()
         props.setMessageInput('')
         setNmessageInput('')
@@ -640,114 +705,137 @@ function MessageInput(props: {
         return;
     }
     return (
-        <form onSubmit={(e) => {
-            e.preventDefault()
-            submit()
-        }}>
-            <Grid container>
-                <Grid id='inputFbackground' item xs={12}>{
-                    isTalking ? (
-                            <TextField
-                                multiline
-                                id="isTalking"
-                                label="Prompt"
-                                value={transcript}
-                                // onChange={(event) => setMessageInput(event.target.value)}
-                                fullWidth
-                                maxRows={12}
-                                autoFocus
-                                // id='message-input'
-                                onKeyDown={(event) => {
-                                    if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                        event.preventDefault()
-                                        submit()
-                                        return
-                                    }
-                                    if (event.keyCode === 13 && event.ctrlKey) {
-                                        event.preventDefault()
-                                        submit(false)
-                                        return
-                                    }
-                                }}
-                            />) :
-                        (
-                            <TextField
-                                multiline
-                                label="Prompt"
-                                value={nmessageInput}
-                                onChange={(event) => {
-                                    //判断输入框的高
-                                    // const myDiv =document.getElementById('inputField')
-                                    const height = window.getComputedStyle(
-                                        document.getElementById('message-input') as HTMLElement)
-                                        .getPropertyValue('height');
-                                    //
-                                    //如果高变大了则调整其位置 inputbar 的height+字体高
-                                    //中间层height减小 字体高
-                                    //修改inputFbackground background-color 为主题背景
-                                    //
-                                    setNmessageInput(event.target.value)
-                                }}
-                                fullWidth
-                                maxRows={12}
-                                autoFocus
-                                id='message-input'
-                                onKeyDown={(event) => {
-                                    if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                        event.preventDefault()
-                                        submit()
-                                        return
-                                    }
-                                    if (event.keyCode === 13 && event.ctrlKey) {
-                                        event.preventDefault()
-                                        submit(false)
-                                        return
-                                    }
-                                }}
-                            />)
+        <>
+            <Box style={{
+                verticalAlign:"top",
+                display:"inline-block",
+                fontSize:"0px",
+                paddingTop:"0px",
+            }}>
+            <Checkbox style={{height:"28px",
+                verticalAlign:"top",
+                display:"inline-block",
+                fontSize:"0px",
+                paddingTop:"0px",
+                }}
+                checked={isCreimgChecked}
+                onChange={(event) => {
+                    setIsCreimgChecked(event.target.checked);
                 }
-                </Grid>
-                <Grid container style={{justifyContent: "right"}}>
-                    <Grid item xs={6} justifySelf="left">
-                        <Typography variant='caption'
-                                    style={{opacity: 0.3}}>{t('[Enter] send, [Shift+Enter] line break')}</Typography>
-                        <Typography variant='caption'
-                                    style={{opacity: 0.3}}>{t('[Ctrl+Enter] send without generating')}</Typography>
+                }
+                title={t('Create image') as string}
+            />
+            </Box>
+            <form onSubmit={(e) => {
+                e.preventDefault()
+                submit()
+            }}>
+                <Grid container>
+                    <Grid id='inputFbackground' item xs={12}>{
+                        isTalking ? (
+                                <TextField
+                                    multiline
+                                    id="isTalking"
+                                    label="Prompt"
+                                    value={transcript}
+                                    // onChange={(event) => setMessageInput(event.target.value)}
+                                    fullWidth
+                                    maxRows={12}
+                                    autoFocus
+                                    // id='message-input'
+                                    onKeyDown={(event) => {
+                                        if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                                            event.preventDefault()
+                                            submit()
+                                            return
+                                        }
+                                        if (event.keyCode === 13 && event.ctrlKey) {
+                                            event.preventDefault()
+                                            submit(false)
+                                            return
+                                        }
+                                    }}
+                                />) :
+                            (
+                                <TextField
+                                    multiline
+                                    label="Prompt"
+                                    value={nmessageInput}
+                                    onChange={(event) => {
+                                        //判断输入框的高
+                                        // const myDiv =document.getElementById('inputField')
+                                        const height = window.getComputedStyle(
+                                            document.getElementById('message-input') as HTMLElement)
+                                            .getPropertyValue('height');
+                                        //
+                                        //如果高变大了则调整其位置 inputbar 的height+字体高
+                                        //中间层height减小 字体高
+                                        //修改inputFbackground background-color 为主题背景
+                                        //
+                                        setNmessageInput(event.target.value)
+                                    }}
+                                    fullWidth
+                                    maxRows={12}
+                                    autoFocus
+                                    id='message-input'
+                                    onKeyDown={(event) => {
+                                        if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                                            event.preventDefault()
+                                            submit()
+                                            return
+                                        }
+                                        if (event.keyCode === 13 && event.ctrlKey) {
+                                            event.preventDefault()
+                                            submit(false)
+                                            return
+                                        }
+                                    }}
+                                />)
+                    }
                     </Grid>
-                    <Grid item xs={6} style={{justifyContent: "right", display: 'flex'}}>
-                        <IconButton size='large' color='primary' disabled={!isTalking && listening}
-                                    onClick={props.scrollControl}>
+                    <Grid container style={{justifyContent: "right"}}>
+                        <Grid item xs={6} justifySelf="left">
+                            <Typography variant='caption'
+                                        style={{opacity: 0.3}}>{t('[Enter] send, [Shift+Enter] line break')}</Typography>
+                            <Typography variant='caption'
+                                        style={{opacity: 0.3}}>{t('[Ctrl+Enter] send without generating')}</Typography>
+                        </Grid>
+                        <Grid item xs={6} style={{justifyContent: "right", display: 'flex'}}>
+                            <IconButton size='large' color='primary' disabled={!isTalking && listening}
+                                        onClick={props.scrollControl}>
+                                {
+                                    props.isScrolling ? (
+                                        <StopCircleOutlinedIcon/>
+                                    ) : (
+                                        <RestartAltOutlinedIcon/>
+                                    )
+                                }
+                            </IconButton>
                             {
-                                props.isScrolling ? (
-                                    <StopCircleOutlinedIcon/>
-                                ) : (
-                                    <RestartAltOutlinedIcon/>
-                                )
+                                props.settings.autoSpeech && (
+                                    <AutoSpeechControlUnit speech={props.settings.speech}
+                                                           autoSpeech={props.settings.autoSpeech}/>)
                             }
-                        </IconButton>
-                        {
-                            props.settings.autoSpeech && (
-                                <AutoSpeechControlUnit speech={props.settings.speech}
-                                                       autoSpeech={props.settings.autoSpeech}/>)
-                        }
-                        <IconButton size='large' color='primary' disabled={!isTalking && listening}
-                                    onClick={talking}>
-                            {
-                                listening ? (
-                                    <MicOffOutlinedIcon/>
-                                ) : (
-                                    <MicNoneOutlinedIcon/>
-                                )
-                            }
-                        </IconButton>
-                        <IconButton size='large' color='primary' type='submit'>
-                            <SendOutlinedIcon/>
-                        </IconButton>
+                            <IconButton size='large' color='primary' disabled={!isTalking && listening}
+                                        onClick={talking}>
+                                {
+                                    listening ? (
+                                        <MicOffOutlinedIcon/>
+                                    ) : (
+                                        <MicNoneOutlinedIcon/>
+                                    )
+                                }
+                            </IconButton>
+                            <IconButton size='large' color='primary' type='submit'>
+                                <SendOutlinedIcon/>
+                            </IconButton>
+                        </Grid>
                     </Grid>
                 </Grid>
-            </Grid>
 
-        </form>
+            </form>
+
+        </>
     )
 }
 

@@ -28,9 +28,10 @@ if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefin
     // 在 Cordova 环境下执行的代码
 //  synth = window.speechSynthesis;
 } else {
-    if(typeof window.speechSynthesis !== "undefined")
+    if(typeof window.speechSynthesis !== "undefined") {
         void 0;
-        // synth = window.speechSynthesis;
+        synth = window.speechSynthesis;
+    }
 }
 
 let autoSpeedBuffer: Array<string> = new Array<string>();

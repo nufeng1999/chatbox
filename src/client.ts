@@ -1,11 +1,12 @@
-import { Message } from './types';
+import {Message} from './types';
 import * as wordCount from './utils';
-import { createParser } from 'eventsource-parser'
+import {createParser} from 'eventsource-parser'
+
 
 export interface OnTextCallbackResult {
     // response content
     text: string;
-    frPos :number;
+    frPos: number;
     // cancel for fetch
     cancel: () => void;
 }
@@ -58,7 +59,7 @@ export async function replay(
     let fullText = '';
     try {
 
-        const messages = prompts.map(msg => ({ role: msg.role, content: msg.content }))
+        const messages = prompts.map(msg => ({role: msg.role, content: msg.content}))
         const response = await fetch(`${host}/v1/chat/completions`, {
             method: 'POST',
             headers: {
@@ -73,7 +74,7 @@ export async function replay(
             }),
             signal: controller.signal,
         });
-        let frPos :number=0;
+        let frPos: number = 0;
         await handleSSE(response, (message) => {
             if (message === '[DONE]') {
                 return;
@@ -87,7 +88,7 @@ export async function replay(
                 fullText += text
                 if (onText) {
 
-                    frPos=onText({ text: fullText,frPos, cancel })
+                    frPos = onText({text: fullText, frPos, cancel})
                 }
             }
         })
@@ -122,7 +123,7 @@ export async function handleSSE(response: Response, onMessage: (message: string)
             onMessage(event.data)
         }
     })
-    for  await (const chunk of iterableStreamAsync(response.body)) {
+    for await (const chunk of iterableStreamAsync(response.body)) {
         const str = new TextDecoder().decode(chunk)
         parser.feed(str)
     }
@@ -132,7 +133,7 @@ export async function* iterableStreamAsync(stream: ReadableStream): AsyncIterabl
     const reader = stream.getReader();
     try {
         while (true) {
-            const { value, done } = await reader.read()
+            const {value, done} = await reader.read()
             if (done) {
                 return
             } else {
@@ -141,5 +142,71 @@ export async function* iterableStreamAsync(stream: ReadableStream): AsyncIterabl
         }
     } finally {
         reader.releaseLock()
+    }
+}
+
+export async function dall_e_Replay(props: {
+                                        apiKey: string,
+                                        host: string,
+                                        maxContextSize: string,
+                                        maxTokens: string,
+                                        modelName: string,
+                                        msg: string,
+                                        n: number,
+                                        size: string,
+                                        response_format: string,
+                                        onText?: (option: OnTextCallbackResult) => number,
+                                        onError?: (error: Error) => void
+                                    }
+) {
+//POST https://api.openai.com/v1/images/generations
+
+    // fetch has been canceled
+    let hasCancel = false;
+    // abort signal for fetch
+    const controller = new AbortController();
+    const cancel = () => {
+        hasCancel = true;
+        controller.abort();
+    };
+    let frPos: number = 0;
+    try {
+
+        const response = fetch(`${props.host}/v1/images/generations`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${props.apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                prompt: props.msg,
+                n: props.n,
+                size: props.size,
+                response_format: props.response_format
+            }),
+            signal: controller.signal,
+        })
+            // @ts-ignore
+            .then(response => response.json())
+            .then(data => {
+                const created = data.created;
+                const imgsdata = data.data;
+                if (props.onText) {
+                    frPos = props.onText({text: imgsdata[0].url, frPos, cancel})
+                }
+            })
+            .catch(error => console.error(error));
+
+    } catch (error) {
+        // if a cancellation is performed
+        // do not throw an exception
+        // otherwise the content will be overwritten.
+        if (hasCancel) {
+            return;
+        }
+        if (props.onError) {
+            props.onError(error as any)
+        }
+        throw error
     }
 }

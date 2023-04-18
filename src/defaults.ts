@@ -10,12 +10,14 @@ export const sessions: Session[] = [
                 "id": "9acc4bde-3510-41fd-b872-666547b8023e",
                 "content": "hi",
                 "format":'markdown',
+                "createImg":false,
                 "role": "user"
             },
             {
                 "id": "fca70e6f-e8df-401a-8c20-7de068e931b5",
                 "content": "Hello! How can I assist you today?",
                 "format":'markdown',
+                "createImg":false,
                 "role": "assistant"
             }
         ]

@@ -330,7 +330,11 @@ function _Block(props: Props) {
                                                 wordBreak: 'break-word',
                                             }}
                                             style={{width:'100%'}}
-                                            dangerouslySetInnerHTML={{__html:msg.format==='html'?( msg.content):md.render(msg.content)}}
+                                            dangerouslySetInnerHTML={{__html:(function():string{
+                                                    if(msg.format==='img')
+                                                        return `<img src=${msg.content} />`
+                                                    return msg.format==='html'?( msg.content):md.render(msg.content)})()
+                                            }}
 
                                         />
                                     )

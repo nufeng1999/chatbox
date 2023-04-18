@@ -7,6 +7,7 @@ export function nameConversation(msgs: Message[]): Message[] {
                 id: '1',
                 role: 'system',
                 format: 'markdown',
+                createImg:false,
                 content: `Name the conversation based on the chat records.
 Please provide a concise name, within 10 characters and without quotation marks.
 Please use the speak language in the conversation.
