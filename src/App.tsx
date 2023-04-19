@@ -266,7 +266,7 @@ function Main() {
                                     cancel,
                                 }
 
-                                const regex = /(？|！|：|。|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
+                                const regex = /(？|！|：|。|\n|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
                                 regex.lastIndex = frPos
                                 let match = regex.exec(text);
                                 if (match != null && match.index > frPos) {

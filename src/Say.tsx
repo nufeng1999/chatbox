@@ -45,7 +45,7 @@ const globalSpeakingEvent = new CustomEvent('SpeakingChange', {
         message: 'SpeakingChange'
     }
 });
-function setIsSpeaking(isSpeaking:boolean){
+function setGlobalSpeaking(isSpeaking:boolean){
     globalSpeaking=isSpeaking;
     document.dispatchEvent(globalSpeakingEvent);
 }
@@ -224,7 +224,8 @@ function preSay(msg: string | Message, speech: string | null): SpeechSynthesisUt
     }
     return utterance;
 }
-const handleSpeech = (checked:boolean,
+const handleSpeech = (isSpeaking:boolean,
+                      checked:boolean,
                       msg: Message,
                       speech: string | null,
                       setIsSpeaking:(arg0: boolean)=>void
@@ -260,9 +261,31 @@ const handleSpeech = (checked:boolean,
     // utterance.rate = 0.8;
     // utterance.pitch = 1;
 };
+const newHandleSpeech= (isSpeaking:boolean,
+                        checked:boolean,
+                        msg: Message,
+                        speech: string | null,
+                        setIsSpeaking:(arg0: boolean)=>void
+) => {
+    if (globalSpeaking && (!synth.speaking)) {
+        setGlobalSpeaking(!globalSpeaking);
+        stopAutoPlay()
+        if (currentMediaRecorder)
+            record_stop();
+    }
+    if (!isSpeaking) {
+        if (checked)record_start();
+        // const regex = /<=(？|！|：|。|\n|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
+        const strArray = msg.content.split(/<=(？|！|：|。|\n|\([a-zA-Z]\)\(?=[;\?.!:]\))/g)
+        strArray.map((str) => pushToAutoSpeedBuffer(str))
+    }
+    autoSpeechControl()
+    currentIndex = msg.id;
+};
+
 const autoSay = (msg: string | Message, speech: string | null) => {
     // console.log("准备开始自动朗读。更改状态为 true。");
-    setIsSpeaking(true);
+    setGlobalSpeaking(true);
     const utterance = preSay(msg, speech);
     if (utterance === null) {
         // console.log("无法朗读 utterance is null! 更改状态为 false。");
@@ -271,7 +294,7 @@ const autoSay = (msg: string | Message, speech: string | null) => {
         return;
     }
     synth.speak(utterance);
-    setIsSpeaking(true);
+    setGlobalSpeaking(true);
     currentUtterance = utterance;
     if (typeof msg !== 'string') {
         currentIndex = msg.id;
@@ -283,14 +306,15 @@ const autoSay = (msg: string | Message, speech: string | null) => {
         currentUtterance = null;
         currentIndex = "-1";
         // console.log("朗读发生错误了。更改状态为 false。");
-        setIsSpeaking(false);
+        setGlobalSpeaking(false);
     }
     utterance.onend = () => {
-        if (currentMediaRecorder)
-            currentMediaRecorder.stop();
+        if (currentMediaRecorder && autoSpeedBuffer.length<1)record_stop();
+        // if (currentMediaRecorder)
+        //     currentMediaRecorder.stop();
         // console.log("朗读结束了。更改状态为 false。");
         currentMediaRecorder = null;
-        setIsSpeaking(false);
+        setGlobalSpeaking(false);
         currentUtterance = null;
         currentIndex = "-1";
     }
@@ -305,6 +329,7 @@ const autoSpeed = (time: DOMHighResTimeStamp) => {
         // setIsSpeaking(true)
         autoSay(autoSpeedBuffer.shift() as string, speech);
     }
+
     // console.log('无差别调用 autoSay 了')
     autoSpeedNumber = window.requestAnimationFrame(autoSpeed);
 }
@@ -317,7 +342,7 @@ const autoSpeedStart=(
         return;
     }
     if (autoSpeedNumber < 1 && autoSpeech) {
-        setIsSpeaking(true)
+        setGlobalSpeaking(true)
         // isAutoSpeechStarted=true
         // console.log('default 启动autoSpeed')
         autoSpeedNumber = window.requestAnimationFrame(autoSpeed);//default 启动autoSpeed
@@ -326,17 +351,20 @@ const autoSpeedStart=(
 const autoSpeechControl = () => {
     globalSpeaking=!globalSpeaking
     if (!globalSpeaking) {
-        setIsSpeaking(globalSpeaking);
+        synth.pending
+        setGlobalSpeaking(globalSpeaking);
         stopAutoPlay()
+        if (currentMediaRecorder)
+            record_stop();
         return
     }
     if (autoSpeedNumber < 1) {
-        setIsSpeaking(true)
+        setGlobalSpeaking(true)
         autoSpeedNumber = window.requestAnimationFrame(autoSpeed)
         return
     }
     //||
-    setIsSpeaking(true);
+    setGlobalSpeaking(true);
     // autoSpeedNumber = window.requestAnimationFrame(autoSpeed)
     //继续朗读
 }
@@ -406,14 +434,14 @@ const Say =(
         isSpeaking
             ? (
                 <IconButton onClick={() => {
-                    (props.msg != null) && handleSpeech(checked,props.msg, props.speech,setIsSpeaking)
+                    (props.msg != null) && newHandleSpeech(isSpeaking,checked,props.msg, props.speech,setIsSpeaking)
                 }} size='large' color='primary'>
                     <VoiceOverOffIcon fontSize='small'/>
                 </IconButton>)
             : (
                 <>
                     <IconButton onClick={() => {
-                        (props.msg != null) && handleSpeech(checked,props.msg, props.speech,setIsSpeaking)
+                        (props.msg != null) && newHandleSpeech(isSpeaking,checked,props.msg, props.speech,setIsSpeaking)
                     }} size='large' color='primary'>
                         <RecordVoiceOverIcon fontSize='small'/>
                     </IconButton>
