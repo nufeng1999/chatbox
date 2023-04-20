@@ -70,6 +70,22 @@ export async function writeSessions(sessions: Session[]) {
 
 // react hook
 
+export interface Store {
+    version: string;
+    settings: Settings;
+    setSettings: (settings: Settings) => void;
+    needSetting: boolean;
+    chatSessions: Session[];
+    createChatSession: (session: Session, ix?: number) => void;
+    updateChatSession: (session: Session) => void;
+    deleteChatSession: (target: Session) => void;
+    createEmptyChatSession: () => void;
+    currentSession: Session;
+    switchCurrentSession: (value: (((prevState: Session) => Session) | Session)) => void;
+    toasts: { id: string; content: string }[];
+    addToast: (content: string) => void;
+    removeToast: (id: string) => void;
+}
 export default function useStore() {
     const { i18n } = useTranslation();
 
@@ -157,7 +173,7 @@ export default function useStore() {
         _setToasts(toasts.filter((t) => t.id !== id))
     }
 
-    return {
+    return <Store>{
         version,
 
         settings,

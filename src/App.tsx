@@ -1,49 +1,23 @@
-import React, {DOMElement, useMemo, useRef} from 'react';
-import Block, {Props} from './Block'
+import React, { useRef} from 'react';
+import Block from './Block'
 import * as client from './client'
-import SessionItem from './SessionItem'
-import PauseCircleOutlineOutlinedIcon from '@mui/icons-material/PauseCircleOutlineOutlined';
-import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
-
-import StopCircleOutlinedIcon from '@mui/icons-material/StopCircleOutlined';
-import RestartAltOutlinedIcon from '@mui/icons-material/RestartAltOutlined';
-
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
-import MicNoneOutlinedIcon from '@mui/icons-material/MicNoneOutlined';
-import MicOffOutlinedIcon from '@mui/icons-material/MicOffOutlined';
-
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import {BottomNavigation, BottomNavigationAction, Checkbox, SvgIconTypeMap} from '@mui/material';
 import {
-    Toolbar, Box, Badge, Snackbar,
-    List, ListSubheader, ListItemText, MenuList,
-    IconButton, Button, Stack, Grid, MenuItem, ListItemIcon, Typography, Divider,
-    TextField, AppBar
+    Box, Snackbar,
+    List, Stack, Grid
 } from '@mui/material';
 import {isMobile} from "react-device-detect";
 import {Session, createSession, Message, createMessage, Settings, OpenAIRoleEnum, OpenAIRoleEnumType} from './types'
-import useStore from './store'
+import useStore, {Store} from './store'
 import SettingWindow from './SettingWindow'
 import ChatConfigWindow from './ChatConfigWindow'
-import ChatBubbleOutlineOutlinedIcon from '@mui/icons-material/ChatBubbleOutlineOutlined';
-import SettingsIcon from '@mui/icons-material/Settings';
-import AddIcon from '@mui/icons-material/Add';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import * as prompts from './prompts';
-import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import CleanWidnow from './CleanWindow';
-import * as api from './api';
 import {ThemeSwitcherProvider} from './theme/ThemeSwitcher';
 import {useTranslation} from "react-i18next";
-import icon from './icon.png'
-import WaitingGif from './Waiting.gif'
-import {AutoSpeechControlUnit, pushToAutoSpeedBuffer,} from "./Say";
+import {pushToAutoSpeedBuffer,} from "./Say";
 import LeftSideBar from './leftside/LeftSideBar';
-import MicOffIcon from './mic_off.png';
-import MicOnIcon from './mic_on.png';
+import AppToolBar from './topside/AppToolBar';
 import iconLib from "./iconLib";
-import SpeechRecognition, {useSpeechRecognition} from 'react-speech-recognition';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
 import FaceIcon from '@mui/icons-material/Face';
 import Face2Icon from '@mui/icons-material/Face2';
@@ -60,10 +34,7 @@ import CloudIcon from '@mui/icons-material/Cloud';
 import SettingsSystemDaydreamIcon from '@mui/icons-material/SettingsSystemDaydream';
 import SchoolIcon from '@mui/icons-material/School';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import {display} from "@mui/system";
-import {OverridableComponent} from "@mui/types";
-import {dall_e_Replay} from "./client";
-// @ts-ignore
+import BottomBar from "./bottom/BottomBar";
 
 const {useEffect, useState} = React
 
@@ -265,15 +236,6 @@ function Main() {
                                     content: text,
                                     cancel,
                                 }
-
-                                const regex = /(？|！|：|。|\n|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
-                                regex.lastIndex = frPos
-                                let match = regex.exec(text);
-                                if (match != null && match.index > frPos) {
-                                    let substr = text.substring(frPos, match.index + 1)
-                                    pushToAutoSpeedBuffer(substr)
-                                    frPos = match.index + 1
-                                }
                                 break;
                             }
                         }
@@ -359,7 +321,6 @@ function Main() {
 
     const scrollControl = () => {
         setIsScrolling(!isScrolling);
-
     }
     return (
         <Box sx={{height: '100vh'}}>
@@ -372,48 +333,15 @@ function Main() {
                          configureChatConfig={configureChatConfig}
                          setConfigureChatConfig={setConfigureChatConfig}
             />
-
-            <Box>
-                <Toolbar variant="dense">
-                    {leftSideBarVisible ? (
-                        <IconButton onClick={() => {
-                            setLeftSideBarVisible(false);
-                            // setRightContentWidth("fit-content")
-                        }}
-                                    edge="end" color="inherit"
-                                    aria-label="menu" sx={{mr: 2}}>
-                            <ArrowBackIosNewIcon/>
-                        </IconButton>
-                    ) : (
-                        <IconButton onClick={() => {
-                            setLeftSideBarVisible(true);
-                            setRightContentWidth("min-content")
-                        }}
-                                    edge="start" color="inherit"
-                                    aria-label="menu" sx={{mr: 1}}>
-                            <ArrowForwardIosIcon/>
-                        </IconButton>
-                    )}
-                    <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}>
-                        <ChatBubbleOutlineOutlinedIcon/>
-                    </IconButton>
-                    <Typography variant="body2" color="inherit" component="div" noWrap sx={{flexGrow: 1}}>
-                                    <span onClick={() => {
-                                        editCurrentSession()
-                                    }} style={{cursor: 'pointer'}}>
-                                        {store.currentSession.name}
-                                    </span>
-                    </Typography>
-                    <IconButton edge="start" color="inherit" aria-label="menu" sx={{mr: 1}}
-                                onClick={() => setSessionClean(store.currentSession)}
-                    >
-                        <CleaningServicesIcon/>
-                    </IconButton>
-                </Toolbar>
-                <Divider/>
-            </Box>
-
-            <Grid item xs={12} sx={{
+            <AppToolBar
+                leftSideBarVisible={leftSideBarVisible}
+                setLeftSideBarVisible={setLeftSideBarVisible}
+                setRightContentWidth={setRightContentWidth}
+                setSessionClean={setSessionClean}
+                editCurrentSession={editCurrentSession}
+                store={store}
+            />
+            <Grid id="chatcontent" item xs={12} sx={{
                 flexWrap: 'nowrap',
                 height: 'auto',
                 width: rightContentWidth
@@ -454,94 +382,93 @@ function Main() {
                     >
                         {
                             store.currentSession.messages.map((msg, ix, {length}) => {
-                                    return (
-                                        <Block id={msg.id} key={msg.id} msg={msg}
-                                               isReady={isReady}
-                                               getAssistantIcon={getAssistantIcon}
-                                               showWordCount={store.settings.showWordCount || false}
-                                               showTokenCount={store.settings.showTokenCount || false}
-                                               showModelName={store.settings.showModelName || false}
-                                               assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
-                                               speech={store.settings.speech || ''}
-                                               autoSpeech={store.settings.autoSpeech || false}
-                                               modelName={store.currentSession.model}
-                                               setMsg={(updated) => {
-                                                   store.currentSession.messages = store.currentSession.messages.map((m) => {
-                                                       if (m.id === updated.id) {
-                                                           return updated
-                                                       }
-                                                       return m
-                                                   })
-                                                   store.updateChatSession(store.currentSession)
-                                               }}
-                                               delMsg={() => {
-                                                   store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
-                                                   store.updateChatSession(store.currentSession)
-                                               }}
-                                               refreshMsg={() => {
-                                                   if (msg.role === 'assistant') {
-                                                       const promptMsgs = store.currentSession.messages.slice(0, ix)
-                                                       generate(store.currentSession, promptMsgs, msg)
-                                                   } else {
-                                                       const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
+                                return (
+                                    <Block id={msg.id} key={msg.id} msg={msg}
+                                           isReady={isReady}
+                                           getAssistantIcon={getAssistantIcon}
+                                           showWordCount={store.settings.showWordCount || false}
+                                           showTokenCount={store.settings.showTokenCount || false}
+                                           showModelName={store.settings.showModelName || false}
+                                           assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
+                                           speech={store.settings.speech || ''}
+                                           autoSpeech={store.settings.autoSpeech || false}
+                                           modelName={store.currentSession.model}
+                                           setMsg={(updated) => {
+                                               store.currentSession.messages = store.currentSession.messages.map((m) => {
+                                                   if (m.id === updated.id) {
+                                                       return updated
+                                                   }
+                                                   return m
+                                               })
+                                               store.updateChatSession(store.currentSession)
+                                           }}
+                                           delMsg={() => {
+                                               store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
+                                               store.updateChatSession(store.currentSession)
+                                           }}
+                                           refreshMsg={() => {
+                                               if (msg.role === 'assistant') {
+                                                   const promptMsgs = store.currentSession.messages.slice(0, ix)
+                                                   generate(store.currentSession, promptMsgs, msg)
+                                               } else {
+                                                   const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
 
-                                                       const newAssistantMsg = createMessage(
-                                                           OpenAIRoleEnum.Assistant,
-                                                           `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
-                                                           'html');
-                                                       const newMessages = [...store.currentSession.messages]
-                                                       newMessages.splice(ix + 1, 0, newAssistantMsg)
-                                                       store.currentSession.messages = newMessages
-                                                       store.updateChatSession(store.currentSession)
-                                                       generate(store.currentSession, promptsMsgs, newAssistantMsg)
-                                                       messageScrollRef.current = {
-                                                           msgId: newAssistantMsg.id,
-                                                           smooth: true
-                                                       }
+                                                   const newAssistantMsg = createMessage(
+                                                       OpenAIRoleEnum.Assistant,
+                                                       `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                                       'html');
+                                                   const newMessages = [...store.currentSession.messages]
+                                                   newMessages.splice(ix + 1, 0, newAssistantMsg)
+                                                   store.currentSession.messages = newMessages
+                                                   store.updateChatSession(store.currentSession)
+                                                   generate(store.currentSession, promptsMsgs, newAssistantMsg)
+                                                   messageScrollRef.current = {
+                                                       msgId: newAssistantMsg.id,
+                                                       smooth: true
                                                    }
-                                               }}
-                                               copyMsg={() => {
-                                                   navigator.clipboard.writeText(msg.content)
-                                                   store.addToast(t('copied to clipboard'))
-                                               }}
-                                               shareMsg={() => {
+                                               }
+                                           }}
+                                           copyMsg={() => {
+                                               navigator.clipboard.writeText(msg.content)
+                                               store.addToast(t('copied to clipboard'))
+                                           }}
+                                           shareMsg={() => {
+                                               // @ts-ignore
+                                               if (typeof window.cordova !== "undefined") {
+                                                   var options = {
+                                                       message: msg.content,
+                                                       subject: 'ChatAI',
+                                                       // files: ['path/to/file'], // 可选项
+                                                       // url: ''
+                                                   };
                                                    // @ts-ignore
-                                                   if (typeof window.cordova !== "undefined") {
-                                                       var options = {
-                                                           message: msg.content,
-                                                           subject: 'ChatAI',
-                                                           // files: ['path/to/file'], // 可选项
-                                                           // url: ''
-                                                       };
+                                                   window.plugins.socialsharing.shareWithOptions(options, function (result) {
+                                                           console.log('分享成功：' + result.completed);
+                                                       },
                                                        // @ts-ignore
-                                                       window.plugins.socialsharing.shareWithOptions(options, function (result) {
-                                                               console.log('分享成功：' + result.completed);
-                                                           },
-                                                           // @ts-ignore
-                                                           function (error) {
-                                                               console.log('分享失败：' + error);
-                                                           });
-                                                       return
-                                                   }
-                                                   if (navigator.share) {
-                                                       navigator.share({
-                                                           title: 'ChatAI',
-                                                           text: msg.content,
-                                                       })
-                                                           .then(() => console.log('共享成功。'))
-                                                           .catch((err) => {
-                                                               store.addToast(err)
-                                                               console.log('共享失败：', err)
-                                                           });
-                                                   }
-                                               }}
-                                               quoteMsg={() => {
-                                                   let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
-                                                   input += '\n\n-------------------\n\n'
-                                                   setMessageInput(input)
-                                               }}
-                                        />
-                                    )
+                                                       function (error) {
+                                                           console.log('分享失败：' + error);
+                                                       });
+                                                   return
+                                               }
+                                               if (navigator.share) {
+                                                   navigator.share({
+                                                       title: 'ChatAI',
+                                                       text: msg.content,
+                                                   })
+                                                       .then(() => console.log('共享成功。'))
+                                                       .catch((err) => {
+                                                           store.addToast(err)
+                                                           console.log('共享失败：', err)
+                                                       });
+                                               }
+                                           }}
+                                           quoteMsg={() => {
+                                               let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
+                                               input += '\n\n-------------------\n\n'
+                                               setMessageInput(input)
+                                           }}
+                                    />)
                                 }
                             )
                         }
@@ -550,46 +477,15 @@ function Main() {
 
                 {/*右边内容结束*/}
             </Grid>
-            <Grid id='inputbar' style={{
-                position: 'absolute',
-                width: '100%',
-                bottom: '0px',
-                fontSize:"0px",
-                height: '120px'
-            }}>
-                <Box sx={{padding: '20px 0', width: '99%', height: 'auto'}} style={{
-                    verticalAlign:"top",
-                    display:"inline-block",
-                    fontSize:"0px",
-                    paddingTop:"0px",
-                }}>
-                    <MessageInput
-                        isScrolling={isScrolling}
-                        scrollControl={scrollControl}
-                        settings={store.settings}
-                        setMessageInput={setMessageInput}
-                        onSubmit={async (newUserMsg: Message, needGenerating = true) => {
-                            if (needGenerating) {
-                                const promptsMsgs = [...store.currentSession.messages, newUserMsg]
-                                const newAssistantMsg = createMessage(
-                                    OpenAIRoleEnum.Assistant,
-                                    `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
-                                    'html');
-                                store.currentSession.messages = [...store.currentSession.messages, newUserMsg, newAssistantMsg]
-                                store.updateChatSession(store.currentSession)
-                                // console.log("newAssistantMsg  " + newAssistantMsg.content)
-                                generate(store.currentSession, promptsMsgs, newAssistantMsg)
-                                // if (store.settings.autoSpeech) handleSay(newAssistantMsg,store.settings.speech);
-                                messageScrollRef.current = {msgId: newAssistantMsg.id, smooth: true}
-                            } else {
-                                store.currentSession.messages = [...store.currentSession.messages, newUserMsg]
-                                store.updateChatSession(store.currentSession)
-                                messageScrollRef.current = {msgId: newUserMsg.id, smooth: true}
-                            }
-                        }}
-                    />
-                </Box>
-            </Grid>
+
+            <BottomBar
+                isScrolling={isScrolling}
+                scrollControl={scrollControl}
+                store={store}
+                setMessageInput={setMessageInput}
+                generate={generate}
+                messageScrollRef={messageScrollRef}
+            />
 
             <SettingWindow open={openSettingWindow}
                            settings={store.settings}
@@ -647,197 +543,6 @@ interface RecognitionEvent {
     results: SpeechRecognitionResultList[][];
 }
 
-function MessageInput(props: {
-    isScrolling: boolean
-    scrollControl(): void
-    settings: Settings
-    onSubmit: (newMsg: Message, needGenerating?: boolean) => void
-    setMessageInput: (value: string) => void
-}) {
-    const {
-        transcript,
-        listening,
-        resetTranscript,
-        browserSupportsSpeechRecognition
-    } = useSpeechRecognition();
-    const [isTalking, setIsTalking] = React.useState(false)
-    const [isCreimgChecked,setIsCreimgChecked]=React.useState(false)
-
-    const {t} = useTranslation()
-    // const {setMessageInput} = props
-    const [nmessageInput, setNmessageInput] = React.useState("")
-    const submit = (needGenerating = true) => {
-        const newmsg={role:OpenAIRoleEnum.User,content: nmessageInput,format: 'markdown',createImg:isCreimgChecked}
-        if (isTalking) {
-            if (transcript.length === 0) {
-                return;
-            }
-            props.setMessageInput(transcript)
-            SpeechRecognition.stopListening();
-            setIsTalking(false);
-            props.onSubmit(createMessage(newmsg.role,newmsg.content,newmsg.format,newmsg.createImg), needGenerating)
-            resetTranscript()
-            props.setMessageInput('')
-            setNmessageInput('')
-            return;
-        }
-        if (nmessageInput.length === 0) {
-            return;
-        }
-
-        props.setMessageInput(nmessageInput)
-        props.onSubmit(createMessage(newmsg.role,newmsg.content,newmsg.format,newmsg.createImg), needGenerating)
-        resetTranscript()
-        props.setMessageInput('')
-        setNmessageInput('')
-    }
-    // let isTalking=false;
-    const talking = () => {
-        if (isTalking) {
-            props.setMessageInput(transcript)
-            SpeechRecognition.stopListening();
-            setIsTalking(false);
-            return;
-        }
-        resetTranscript()
-        SpeechRecognition.startListening({language: props.settings.language, continuous: true})
-        setIsTalking(true)
-        return;
-    }
-    return (
-        <>
-            <Box style={{
-                verticalAlign:"top",
-                display:"inline-block",
-                fontSize:"0px",
-                paddingTop:"0px",
-            }}>
-            <Checkbox style={{height:"28px",
-                verticalAlign:"top",
-                display:"inline-block",
-                fontSize:"0px",
-                paddingTop:"0px",
-                }}
-                checked={isCreimgChecked}
-                onChange={(event) => {
-                    setIsCreimgChecked(event.target.checked);
-                }
-                }
-                title={t('Create image') as string}
-            />
-            </Box>
-            <form onSubmit={(e) => {
-                e.preventDefault()
-                submit()
-            }}>
-                <Grid container>
-                    <Grid id='inputFbackground' item xs={12}>{
-                        isTalking ? (
-                                <TextField
-                                    multiline
-                                    id="isTalking"
-                                    label="Prompt"
-                                    value={transcript}
-                                    // onChange={(event) => setMessageInput(event.target.value)}
-                                    fullWidth
-                                    maxRows={12}
-                                    autoFocus
-                                    // id='message-input'
-                                    onKeyDown={(event) => {
-                                        if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                            event.preventDefault()
-                                            submit()
-                                            return
-                                        }
-                                        if (event.keyCode === 13 && event.ctrlKey) {
-                                            event.preventDefault()
-                                            submit(false)
-                                            return
-                                        }
-                                    }}
-                                />) :
-                            (
-                                <TextField
-                                    multiline
-                                    label="Prompt"
-                                    value={nmessageInput}
-                                    onChange={(event) => {
-                                        //判断输入框的高
-                                        // const myDiv =document.getElementById('inputField')
-                                        const height = window.getComputedStyle(
-                                            document.getElementById('message-input') as HTMLElement)
-                                            .getPropertyValue('height');
-                                        //
-                                        //如果高变大了则调整其位置 inputbar 的height+字体高
-                                        //中间层height减小 字体高
-                                        //修改inputFbackground background-color 为主题背景
-                                        //
-                                        setNmessageInput(event.target.value)
-                                    }}
-                                    fullWidth
-                                    maxRows={12}
-                                    autoFocus
-                                    id='message-input'
-                                    onKeyDown={(event) => {
-                                        if (event.keyCode === 13 && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
-                                            event.preventDefault()
-                                            submit()
-                                            return
-                                        }
-                                        if (event.keyCode === 13 && event.ctrlKey) {
-                                            event.preventDefault()
-                                            submit(false)
-                                            return
-                                        }
-                                    }}
-                                />)
-                    }
-                    </Grid>
-                    <Grid container style={{justifyContent: "right"}}>
-                        <Grid item xs={6} justifySelf="left">
-                            <Typography variant='caption'
-                                        style={{opacity: 0.3}}>{t('[Enter] send, [Shift+Enter] line break')}</Typography>
-                            <Typography variant='caption'
-                                        style={{opacity: 0.3}}>{t('[Ctrl+Enter] send without generating')}</Typography>
-                        </Grid>
-                        <Grid item xs={6} style={{justifyContent: "right", display: 'flex'}}>
-                            <IconButton size='large' color='primary' disabled={!isTalking && listening}
-                                        onClick={props.scrollControl}>
-                                {
-                                    props.isScrolling ? (
-                                        <StopCircleOutlinedIcon/>
-                                    ) : (
-                                        <RestartAltOutlinedIcon/>
-                                    )
-                                }
-                            </IconButton>
-                            {
-                                props.settings.autoSpeech && (
-                                    <AutoSpeechControlUnit speech={props.settings.speech}
-                                                           autoSpeech={props.settings.autoSpeech}/>)
-                            }
-                            <IconButton size='large' color='primary' disabled={!isTalking && listening}
-                                        onClick={talking}>
-                                {
-                                    listening ? (
-                                        <MicOffOutlinedIcon/>
-                                    ) : (
-                                        <MicNoneOutlinedIcon/>
-                                    )
-                                }
-                            </IconButton>
-                            <IconButton size='large' color='primary' type='submit'>
-                                <SendOutlinedIcon/>
-                            </IconButton>
-                        </Grid>
-                    </Grid>
-                </Grid>
-
-            </form>
-
-        </>
-    )
-}
 
 export default function App() {
     return (

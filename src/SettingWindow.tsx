@@ -404,7 +404,7 @@ export default function SettingWindow(props: Props) {
                                 let AssistantIcon
                                     =props.assistantIconMap[key] as OverridableComponent<SvgIconTypeMap<{}, "svg">> & {muiName: string};
                                 return(
-                                <MenuItem value={key}>
+                                <MenuItem key={key} value={key}>
                                 <Avatar><AssistantIcon/></Avatar>
                                 </MenuItem>
                                 )
