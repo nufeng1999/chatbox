@@ -25,11 +25,12 @@ export default function AppToolBar(props: Props) {
         let html = (document.getElementById('chatcontent') as HTMLElement).outerHTML;
         // 将 HTML 解析为 DOM 树
         const $ = cheerio.load(html);
+        $('.copy-action').text('');
         const newcontent= $('.chattips').text('');
         // 初始化 Markdown 转换服务
         const turndownService = new TurndownService();
         html = $.html()
-        console.log(html);
+        // console.log(html);
         // 遍历 DOM 树并将标记转换为 Markdown 语法
         let markdown = '';
         // $('body').children().each(function () {
@@ -50,6 +51,45 @@ export default function AppToolBar(props: Props) {
         };
         let dateStr = `${formats.yyyy}${formats.M}${formats.d}${formats.HH}${formats.mm}${formats.ss}`;
         let filename: string = dateStr + '.md';
+
+        // @ts-ignore
+        if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
+            // const filename = 'example.txt';
+            //cordova.file.dataDirectory
+            const dataDir="file:///storage/emulated/0/Download/"
+            // @ts-ignore
+            window.resolveLocalFileSystemURL(dataDir, function (dirEntry) {
+                // @ts-ignore
+                dirEntry.getFile(filename, { create: true, exclusive: false }, function (file) {
+                    // @ts-ignore
+                    var fileWriter = new FileWriter();
+                    file.createWriter(function (fileWriter: { write: (arg0: Blob) => void; }) {
+                        const markdownBlob = new Blob([markdown], { type: 'text/plain' });
+                        // const dataBlob = new Blob(['Hello World!'], { type: 'text/plain' });
+                        fileWriter.write(markdownBlob);
+                        // @ts-ignore
+                        // console.log(cordova.file.dataDirectory);
+                        // console.log(file.fullPath);
+                        // @ts-ignore
+                        props.store.addToast(dataDir+filename);
+
+                        // import { FileOpener } from '@ionic-native/file-opener/ngx';
+
+                        // const { FileOpener } = require('@ionic-native/file-opener');
+                        // const fileOpener = new FileOpener();
+                        // // @ts-ignore
+                        // fileOpener.open(cordova.file.dataDirectory, 'application/vnd.android.package-archive')
+                        //     .then(() => console.log('FileOpener:File opened successfully'))
+                        //     // @ts-ignore
+                        //     .catch(err => console.error('FileOpener:Error opening file', err));
+
+                        // const fileURL = URL.createObjectURL(file);
+                        // console.log(fileURL);
+                        return;
+                    });
+                });
+            });
+        }
         const markdownBlob = new Blob([markdown], { type: 'text/plain' });
         let url = URL.createObjectURL(markdownBlob)
 
