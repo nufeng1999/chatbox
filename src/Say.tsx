@@ -28,9 +28,13 @@ if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefin
     // 在 Cordova 环境下执行的代码
 //  synth = window.speechSynthesis;
 } else {
-    if(typeof window.speechSynthesis !== "undefined") {
-        void 0;
-        synth = window.speechSynthesis;
+    if (window.process && window.process.versions.electron) {
+
+    }else {
+        if (typeof window.speechSynthesis !== "undefined") {
+            void 0;
+            synth = window.speechSynthesis;
+        }
     }
 }
 
@@ -339,6 +343,10 @@ const autoSpeedStart=(
     // @ts-ignore
     if (typeof window.cordova !== "undefined" || typeof window.PhoneGap !== "undefined") {
         // 在 Cordova 环境下执行的代码
+        return;
+    }
+    if (window.process && window.process.versions.electron) {
+        // 在electron环境下执行的代码
         return;
     }
     if (autoSpeedNumber < 1 && autoSpeech) {

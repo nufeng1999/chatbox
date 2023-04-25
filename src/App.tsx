@@ -42,6 +42,7 @@ function Main() {
     const {t} = useTranslation()
     const store = useStore()
     const [leftSideBarVisible, setLeftSideBarVisible] = React.useState(true);
+    const [currentAssistantMsg, setCurrentAssistantMsg] = React.useState<Message|null>(null);
     const [isScrolling, setIsScrolling] = React.useState(false)
     const [isPlaying, setIsPlaying] = React.useState(false)
     // 是否展示设置窗口
@@ -275,7 +276,8 @@ function Main() {
                             content: text,
                             cancel,
                         }
-
+                        setCurrentAssistantMsg(session.messages[i]);
+                        setIsScrolling(true);
                         const regex = /(？|！|：|。|\([a-zA-Z]\)\(?=[;\?.!:]\))/g
                         regex.lastIndex = frPos
                         let match = regex.exec(text);
@@ -318,225 +320,217 @@ function Main() {
             sessionListRef.current.scrollTo(0, 0)
         }
     }
-
     const scrollControl = () => {
         setIsScrolling(!isScrolling);
+        isScrolling && currentAssistantMsg?.cancel?.();
     }
-    return (
-        <Box sx={{height: '100vh'}}>
-            <LeftSideBar setRightContentWidth={setRightContentWidth}
-                         store={store}
-                         leftSideBarVisible={leftSideBarVisible}
-                         setLeftSideBarVisible={setLeftSideBarVisible}
-                         openSettingWindow={openSettingWindow}
-                         setOpenSettingWindow={setOpenSettingWindow}
-                         configureChatConfig={configureChatConfig}
-                         setConfigureChatConfig={setConfigureChatConfig}
-            />
-            <AppToolBar
-                leftSideBarVisible={leftSideBarVisible}
-                setLeftSideBarVisible={setLeftSideBarVisible}
-                setRightContentWidth={setRightContentWidth}
-                setSessionClean={setSessionClean}
-                editCurrentSession={editCurrentSession}
-                store={store}
-            />
-            <Grid id="chatcontent" item xs={12} sx={{
-                flexWrap: 'nowrap',
-                height: 'auto',
-                width: rightContentWidth
-            }}
-                  style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: 'auto',
-                      top: '50px',
-                      bottom: '125px'
-                  }}>
-                {/*右边内容*/}
+    return <Box sx={{height: '100vh'}}>
+        <LeftSideBar setRightContentWidth={setRightContentWidth}
+                     store={store}
+                     leftSideBarVisible={leftSideBarVisible}
+                     setLeftSideBarVisible={setLeftSideBarVisible}
+                     openSettingWindow={openSettingWindow}
+                     setOpenSettingWindow={setOpenSettingWindow}
+                     configureChatConfig={configureChatConfig}
+                     setConfigureChatConfig={setConfigureChatConfig}
+        />
+        <AppToolBar
+            leftSideBarVisible={leftSideBarVisible}
+            setLeftSideBarVisible={setLeftSideBarVisible}
+            setRightContentWidth={setRightContentWidth}
+            setSessionClean={setSessionClean}
+            editCurrentSession={editCurrentSession}
+            store={store}
+        />
+        <Grid id="chatcontent" item xs={12} sx={{
+            flexWrap: 'nowrap',
+            height: 'auto',
+            width: rightContentWidth
+        }}
+              style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: 'auto',
+                  top: '50px',
+                  bottom: '125px'
+              }}>
+            {/*右边内容*/}
 
-                <Stack sx={{
-                    overflow: 'scroll',
-                    position: 'absolute',
-                    height: '100%',
-                    width: '100%',
-                    padding: '0px 0',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    overflowX: 'hidden'
-                }} style={{overflow: 'hidden'}}
+            <Stack sx={{
+                overflow: 'scroll',
+                position: 'absolute',
+                height: '100%',
+                width: '100%',
+                padding: '0px 0',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                overflowX: 'hidden'
+            }} style={{overflow: 'hidden'}}
+            >
+                <List
+                    className='scroll'
+                    sx={{
+                        width: '100%',
+                        bgcolor: 'background.paper',
+                        overflow: 'auto',
+                        '& ul': {padding: 0},
+                        flexGrow: 2,
+                    }}
+                    component="div"
+                    ref={messageListRef}
+                    style={{overflowX: 'hidden'}}
                 >
-                    <List
-                        className='scroll'
-                        sx={{
-                            width: '100%',
-                            bgcolor: 'background.paper',
-                            overflow: 'auto',
-                            '& ul': {padding: 0},
-                            flexGrow: 2,
-                        }}
-                        component="div"
-                        ref={messageListRef}
-                        style={{overflowX: 'hidden'}}
-                    >
-                        {
-                            store.currentSession.messages.map((msg, ix, {length}) => {
-                                return (
-                                    <Block id={msg.id} key={msg.id} msg={msg}
-                                           isReady={isReady}
-                                           getAssistantIcon={getAssistantIcon}
-                                           showWordCount={store.settings.showWordCount || false}
-                                           showTokenCount={store.settings.showTokenCount || false}
-                                           showModelName={store.settings.showModelName || false}
-                                           assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
-                                           speech={store.settings.speech || ''}
-                                           autoSpeech={store.settings.autoSpeech || false}
-                                           modelName={store.currentSession.model}
-                                           setMsg={(updated) => {
-                                               store.currentSession.messages = store.currentSession.messages.map((m) => {
-                                                   if (m.id === updated.id) {
-                                                       return updated
-                                                   }
-                                                   return m
-                                               })
-                                               store.updateChatSession(store.currentSession)
-                                           }}
-                                           delMsg={() => {
-                                               store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
-                                               store.updateChatSession(store.currentSession)
-                                           }}
-                                           refreshMsg={() => {
-                                               if (msg.role === 'assistant') {
-                                                   const promptMsgs = store.currentSession.messages.slice(0, ix)
-                                                   generate(store.currentSession, promptMsgs, msg)
-                                               } else {
-                                                   const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
+                    {
+                        store.currentSession.messages.map((msg, ix, {length}) => {
 
-                                                   const newAssistantMsg = createMessage(
-                                                       OpenAIRoleEnum.Assistant,
-                                                       `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
-                                                       'html');
-                                                   const newMessages = [...store.currentSession.messages]
-                                                   newMessages.splice(ix + 1, 0, newAssistantMsg)
-                                                   store.currentSession.messages = newMessages
-                                                   store.updateChatSession(store.currentSession)
-                                                   generate(store.currentSession, promptsMsgs, newAssistantMsg)
-                                                   messageScrollRef.current = {
-                                                       msgId: newAssistantMsg.id,
-                                                       smooth: true
-                                                   }
+                            return <Block id={msg.id} key={msg.id} msg={msg}
+                                       isReady={isReady}
+                                       getAssistantIcon={getAssistantIcon}
+                                       showWordCount={store.settings.showWordCount || false}
+                                       showTokenCount={store.settings.showTokenCount || false}
+                                       showModelName={store.settings.showModelName || false}
+                                       assistantIcon={store.settings.assistantIcon || 'SmartToyIcon'}
+                                       speech={store.settings.speech || ''}
+                                       autoSpeech={store.settings.autoSpeech || false}
+                                       modelName={store.currentSession.model}
+                                       setMsg={(updated) => {
+                                           store.currentSession.messages = store.currentSession.messages.map((m) => {
+                                               if (m.id === updated.id) {
+                                                   return updated
                                                }
-                                           }}
-                                           copyMsg={() => {
-                                               navigator.clipboard.writeText(msg.content)
-                                               store.addToast(t('copied to clipboard'))
-                                           }}
-                                           shareMsg={() => {
+                                               return m
+                                           })
+                                           store.updateChatSession(store.currentSession)
+                                       }}
+                                       delMsg={() => {
+                                           store.currentSession.messages = store.currentSession.messages.filter((m) => m.id !== msg.id)
+                                           store.updateChatSession(store.currentSession)
+                                       }}
+                                       refreshMsg={() => {
+                                           if (msg.role === 'assistant') {
+                                               const promptMsgs = store.currentSession.messages.slice(0, ix)
+                                               generate(store.currentSession, promptMsgs, msg)
+                                           } else {
+                                               const promptsMsgs = store.currentSession.messages.slice(0, ix + 1)
+
+                                               const newAssistantMsg = createMessage(
+                                                   OpenAIRoleEnum.Assistant,
+                                                   `<div style='width:100%;float:left;display:block'>&#x2003;${iconLib.waiting}</div>`,
+                                                   'html');
+                                               const newMessages = [...store.currentSession.messages]
+                                               newMessages.splice(ix + 1, 0, newAssistantMsg)
+                                               store.currentSession.messages = newMessages
+                                               store.updateChatSession(store.currentSession)
+                                               generate(store.currentSession, promptsMsgs, newAssistantMsg)
+                                               messageScrollRef.current = {
+                                                   msgId: newAssistantMsg.id,
+                                                   smooth: true
+                                               }
+                                           }
+                                       }}
+                                       copyMsg={() => {
+                                           navigator.clipboard.writeText(msg.content)
+                                           store.addToast(t('copied to clipboard'))
+                                       }}
+                                       shareMsg={() => {
+                                           // @ts-ignore
+                                           if (typeof window.cordova !== "undefined") {
+                                               var options = {
+                                                   message: msg.content,
+                                                   subject: 'ChatAI',
+                                                   // files: ['path/to/file'], // 可选项
+                                                   // url: ''
+                                               };
                                                // @ts-ignore
-                                               if (typeof window.cordova !== "undefined") {
-                                                   var options = {
-                                                       message: msg.content,
-                                                       subject: 'ChatAI',
-                                                       // files: ['path/to/file'], // 可选项
-                                                       // url: ''
-                                                   };
+                                               window.plugins.socialsharing.shareWithOptions(options, function (result) {
+                                                       console.log('分享成功：' + result.completed);
+                                                   },
                                                    // @ts-ignore
-                                                   window.plugins.socialsharing.shareWithOptions(options, function (result) {
-                                                           console.log('分享成功：' + result.completed);
-                                                       },
-                                                       // @ts-ignore
-                                                       function (error) {
-                                                           console.log('分享失败：' + error);
-                                                       });
-                                                   return
-                                               }
-                                               if (navigator.share) {
-                                                   navigator.share({
-                                                       title: 'ChatAI',
-                                                       text: msg.content,
-                                                   })
-                                                       .then(() => console.log('共享成功。'))
-                                                       .catch((err) => {
-                                                           store.addToast(err)
-                                                           console.log('共享失败：', err)
-                                                       });
-                                               }
-                                           }}
-                                           quoteMsg={() => {
-                                               let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
-                                               input += '\n\n-------------------\n\n'
-                                               setMessageInput(input)
-                                           }}
-                                    />)
-                                }
-                            )
-                        }
-                    </List>
-                </Stack>
+                                                   function (error) {
+                                                       console.log('分享失败：' + error);
+                                                   });
+                                               return
+                                           }
+                                           if (navigator.share) {
+                                               navigator.share({
+                                                   title: 'ChatAI',
+                                                   text: msg.content,
+                                               })
+                                                   .then(() => console.log('共享成功。'))
+                                                   .catch((err) => {
+                                                       store.addToast(err)
+                                                       console.log('共享失败：', err)
+                                                   });
+                                           }
+                                       }}
+                                       quoteMsg={() => {
+                                           let input = msg.content.split('\n').map((line: any) => `> ${line}`).join('\n')
+                                           input += '\n\n-------------------\n\n'
+                                           setMessageInput(input)
+                                       }}
+                                />
+                            }
+                        )
+                    }
+                </List>
+            </Stack>
 
-                {/*右边内容结束*/}
-            </Grid>
+            {/*右边内容结束*/}
+        </Grid>
 
-            <BottomBar
-                isScrolling={isScrolling}
-                scrollControl={scrollControl}
-                store={store}
-                setMessageInput={setMessageInput}
-                generate={generate}
-                messageScrollRef={messageScrollRef}
-            />
+        <BottomBar
+            isScrolling={isScrolling}
+            scrollControl={scrollControl}
+            store={store}
+            setMessageInput={setMessageInput}
+            generate={generate}
+            messageScrollRef={messageScrollRef}
+        />
 
-            <SettingWindow open={openSettingWindow}
-                           settings={store.settings}
-                           assistantIconMap={assistantIconMap}
-                           save={(settings) => {
-                               store.setSettings(settings)
-                               setOpenSettingWindow(false)
-                           }}
-                           close={() => setOpenSettingWindow(false)}
-            />
-            {
-                configureChatConfig !== null && (
-                    <ChatConfigWindow open={configureChatConfig !== null}
-                                      session={configureChatConfig}
-                                      save={(session) => {
-                                          store.updateChatSession(session)
-                                          setConfigureChatConfig(null)
-                                      }}
-                                      close={() => setConfigureChatConfig(null)}
-                    />
-                )
-            }
-            {
-                sessionClean !== null && (
-                    <CleanWidnow open={sessionClean !== null}
-                                 session={sessionClean}
-                                 save={(session) => {
-                                     sessionClean.messages.forEach((msg) => {
-                                         msg?.cancel?.();
-                                     });
+        <SettingWindow open={openSettingWindow}
+                       settings={store.settings}
+                       assistantIconMap={assistantIconMap}
+                       save={(settings) => {
+                           store.setSettings(settings)
+                           setOpenSettingWindow(false)
+                       }}
+                       close={() => setOpenSettingWindow(false)}
+        />
+        {
+            configureChatConfig !== null && <ChatConfigWindow open={configureChatConfig !== null}
+                                  session={configureChatConfig}
+                                  save={(session) => {
+                                      store.updateChatSession(session)
+                                      setConfigureChatConfig(null)
+                                  }}
+                                  close={() => setConfigureChatConfig(null)}
+                />
+        }
+        {
+            sessionClean !== null && <CleanWidnow open={sessionClean !== null}
+                             session={sessionClean}
+                             save={(session) => {
+                                 sessionClean.messages.forEach((msg) => {
+                                     msg?.cancel?.();
+                                 });
 
-                                     store.updateChatSession(session)
-                                     setSessionClean(null)
-                                 }}
-                                 close={() => setSessionClean(null)}
-                    />
-                )
-            }
-            {
-                store.toasts.map((toast) => (
-                    <Snackbar
-                        key={toast.id}
-                        open
-                        onClose={() => store.removeToast(toast.id)}
-                        message={toast.content}
-                        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    />
-                ))
-            }
-        </Box>
-    );
+                                 store.updateChatSession(session)
+                                 setSessionClean(null)
+                             }}
+                             close={() => setSessionClean(null)}
+                />
+        }
+        {
+            store.toasts.map((toast) => <Snackbar
+                    key={toast.id}
+                    open
+                    onClose={() => store.removeToast(toast.id)}
+                    message={toast.content}
+                    anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+                />)
+        }
+    </Box>;
 }
 
 interface RecognitionEvent {

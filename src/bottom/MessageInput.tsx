@@ -18,6 +18,7 @@ interface Props {
 export default function MessageInput(props: {
     isScrolling: boolean
     scrollControl(): void
+    // onStop(): void
     settings: Settings
     onSubmit: (newMsg: Message, needGenerating?: boolean) => void
     setMessageInput: (value: string) => void
